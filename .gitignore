@@ -12,3 +12,12 @@ demo_assignments/
 # Generated knowledge-graph artifacts. graph.json embeds nodes extracted from
 # demo_assignments/, so it stays local with them.
 graphify-out/
+
+# Local reference copy of the original monolithic engine. It is already
+# preserved byte-identical in git history at 3e8f0db, so committing it again
+# would only duplicate 111 KB.
+scriptforge_handwriting_2d_layout_engine.html
+
+# Scratch staging area used while applying the Wave 3 drop-in. The applied
+# result lives in src/ and index.html.
+.wave3_stage/

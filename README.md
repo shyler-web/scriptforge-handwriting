@@ -8,9 +8,11 @@ letters on the page are ever identical.
 
 ## Features
 
-- **Allographic glyph engine** — each character is sliced into micro-strips and warped with
+- **Allographic glyph engine** — every character is sliced into micro-strips and warped with
   continuous Perlin noise, affine shear and pressure-modulated ink, so a page of `a` and `e`
-  never looks like a font.
+  never looks like a font. Each character also selects from a bank of distinct structural
+  allographs (`A0..A3`) so that two adjacent identical characters are never the same drawing,
+  and ink width/opacity follow a per-stroke velocity profile rather than a static constant.
 - **2D spatial LaTeX** — a real parser and renderer for fractions, integrals and sums with
   limits, radicals, matrices, overbars, sub- and superscripts, drawn as strokes rather than
   typeset.
@@ -101,19 +103,20 @@ assets/styles/fonts.css     @font-face rules for the self-hosted fonts.
 docs/screenshot.png         Rendered sample page.
 scripts/serve.mjs           Zero-dependency static dev server.
 scripts/build-tailwind.mjs  Offline Tailwind compiler for assets/styles/tailwind.css.
+scripts/verify-waves.mjs    Headless exit-criteria verifier (35 checks) - run with `node scripts/verify-waves.mjs`.
 scripts/qa/harness.mjs      Headless-Chrome QA driver: runs an assertion module against :8000.
-scripts/qa/*.assertions.js  Per-wave assertion suites (wave1 / wave2 / wave3).
+scripts/qa/*.assertions.js  Per-wave assertion suites (wave1 / wave2 / wave3 / mobile).
 src/
   main.js                   Entry point: boots the studio on window load.
   core/
-    config.js               Canvas geometry, HiDPI factor, ink palettes. Pure data.
+    config.js               Canvas geometry, line pitch, HiDPI factor, ink palettes, allograph archetypes.
     noise.js                Deterministic Perlin/value noise engine.
-    state.js                The single mutable state store (seed, ink, inspector, contours).
+    state.js                The single mutable state store (seed, ink, inspector, contours, pages).
     options.js              Reads the live control-panel values into the render options.
   data/
-    presets.js              The three demo documents.
+    presets.js              The three multi-page demo documents.
   render/
-    glyph.js                Allographic glyph + word rendering (the zero-clone engine).
+    glyph.js                Allographic glyph bank + velocity ink physics (the zero-clone engine).
     math/
       parser.js             LaTeX -> recursive 2D box AST (supsub, frac, binom, sqrt,
                             accent, bigop, delim, matrix).
@@ -156,6 +159,28 @@ src/
 - **New render state** — add it to `src/core/state.js`. Do not reintroduce page-level globals;
   they are what made the original single file hard to extend.
 
+## Verification
+
+Two independent verifiers, neither of which needs a network connection.
+
+```bash
+node scripts/verify-waves.mjs            # 35 headless exit-criteria checks, exit 0 = all pass
+node scripts/qa/harness.mjs scripts/qa/wave1.assertions.js   # needs `npm run dev` running
+node scripts/qa/harness.mjs scripts/qa/wave2.assertions.js
+node scripts/qa/harness.mjs scripts/qa/wave3.assertions.js
+node scripts/qa/harness.mjs scripts/qa/mobile.assertions.js
+```
+
+`verify-waves.mjs` imports the project modules in plain Node and checks the math AST, the
+five diagram grammars, the safe math evaluator, the SVG path flattener, the Zhang-Suen
+skeletonizer, the RDP simplifier, the allograph anti-clone rule, the velocity profile and a
+secret-leak sweep.
+
+The `scripts/qa/` harness drives headless Chrome over the DevTools Protocol against
+`http://localhost:8000`, runs an assertion module inside the page, and reports every console
+error, uncaught exception and failed request. It exits non-zero when an assertion fails, so
+it doubles as a CI gate.
+
 ## Known limitations
 
 - **Multi-page is implemented, but pagination is coarse.** `src/render/page.js` flows the
@@ -169,11 +194,11 @@ src/
   general-purpose parser), and `src/render/diagrams/plot.js` is now a thin alias onto
   `canvas2d.js`, so the old hardcoded damped sine is only reachable through the `damped_sine`
   preset.
-- **The glyph bank has one skeleton per character.** `src/render/glyph.js` warps a single
-  webfont outline per instance; there are no distinct structural allographs, and the ink
-  "velocity" term is index-derived noise rather than a real pen-speed signal. The Proof of
-  Zero-Clone inspector shows the slant delta (`Δθ`) only, not the warp seed, scale matrix or
-  ligature links.
+- **The glyph bank now has distinct structural allographs.** `src/render/glyph.js` picks one of
+  `A0..A3` per character instance and drives ink from a real velocity profile, so adjacent
+  identical characters are never the same drawing. The remaining gap is that the Proof of
+  Zero-Clone inspector still visualises only the slant delta (`Δθ`), not the warp seed, the
+  scale matrix or the ligature links.
 - **Diagram parameters are only partly honoured.** `vars=`, `expr=`, `states=`, `accept=` and
   `fn=` are parsed into the diagram context but the renderers still draw default geometry.
 - The DFA renderer's return arcs from the accepting state are drawn as smooth curves but are not
