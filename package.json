@@ -1,0 +1,14 @@
+{
+  "name": "scriptforge-handwriting",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "ScriptForge — Dynamic Stroke, 2D Math & Hand-Drawn Diagram Engine",
+  "scripts": {
+    "dev": "node scripts/serve.mjs",
+    "start": "node scripts/serve.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
