@@ -67,8 +67,18 @@ The editor accepts plain prose plus a small markup language:
 | `[DIAGRAM: dfa \| states=q0,q1 \| transitions=...]` | A state automaton |
 | `[DIAGRAM: tree \| nodes=... \| edges=...]` | A binary tree |
 | `[DIAGRAM: plot \| label=Response]` | A damped-response function plot |
-| `[DIAGRAM: custom_image]` | A contour trace of an uploaded image |
+| `[DIAGRAM: canvas2d \| fn=4*x^3 \| domain=0,1 \| shade=0.33,0.67]` | A function plot with a hachure-shaded region |
+| `[DIAGRAM: canvas2d \| circles=0.58:4pts,1.0:3pts]` | Concentric target rings with radial callouts |
+| `[DIAGRAM: svg \| <svg viewBox="0 0 200 120">...</svg>]` | Any raw SVG, re-inked by hand |
+| `[DIAGRAM: custom_image]` | A 1px skeleton trace of an uploaded image |
 | `~~wrong term~~` | A multi-pass pen scratch-out |
+
+`fn=` accepts a small expression language — numbers, `x`, `pi`, `e`, the operators
+`+ - * / % ^`, parentheses, implicit products like `2x`, and an allowlist of
+functions (`sin`, `cos`, `tan`, `asin`, `acos`, `atan`, `atan2`, `exp`, `ln`, `log`,
+`sqrt`, `cbrt`, `abs`, `sign`, `floor`, `ceil`, `round`, `pow`, `min`, `max`, `hypot`).
+It is parsed by a dedicated whitelist parser, never by `eval` or `new Function`, so an
+expression cannot reach the DOM or the window.
 
 ## Module map
 
@@ -103,6 +113,8 @@ src/
       primitives.js         Rounded rects, arrows, curly braces, hachure, logic gates.
       grid.js               Universal grid engine: tables, bitfields, K-maps, array strips.
       schematic.js          Universal schematic engine: circuits, automata, trees, lists.
+      canvas2d.js           Universal plot/geometry engine: f(x), shaded regions, targets.
+      svgAdapter.js         Universal SVG adapter: any <svg> re-inked as pen strokes.
       kmap.js               Legacy alias -> grid.js.
       circuit.js            Legacy alias -> schematic.js.
       dfa.js                Legacy alias -> schematic.js.

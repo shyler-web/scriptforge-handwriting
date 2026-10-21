@@ -1,53 +1,51 @@
 /**
- * Demo documents shipped with the studio. Plain strings — no logic.
+ * ScriptForge Multi-Domain Showcase Presets (`src/data/presets.js`)
+ * Demonstrates all 5 Universal Spatial Grammars across Digital Logic, PCS Computer Architecture,
+ * Probability/Calculus, and Automata/DSA.
  */
 
 export const PRESETS = {
-    ee_kmap: `# Digital Logic Design - Assignment #4
-Name: Aarav Sharma    Roll No: 22EC1049
+    ee_kmap: `# Digital Logic & Sequential Design - Assignment #2
+Name: Aarav Sharma    
 
-1. Simplify the 4-variable Boolean function using a Karnaugh Map:
+1. 32-Bit Instruction Format & Register Bitfield Allocation:
+Given 16 registers ($R_0$ to $R_{15}$) and a 6-bit opcode for ADD R1, R2, R3:
+$$ \\text{Bits per register} = \\log_2(16) = 4\\text{ bits}, \\quad \\text{Unused} = 32 - (6 + 3 \\times 4) = 14\\text{ bits} $$
+[DIAGRAM: bitfield | bits=32 | fields=Opcode:6,R1:4,R2:4,R3:4,Unused:14]
+
+2. Simplify Boolean Function via 4-Variable Karnaugh Map:
 $$ F(A,B,C,D) = \\sum m(0, 2, 5, 7, 8, 10, 13, 15) $$
-
-Step 1: Construct the 4-variable K-Map and group adjacent minterms:
 [DIAGRAM: kmap | vars=A,B,C,D | ones=0,2,5,7,8,10,13,15]
 
-Step 2: Extracting prime implicants from the two quad groups:
-Notice that ~~F = A'B' + CD~~ corner minterms (0, 2, 8, 10) wrap around the edges:
-$$ F_{simplified} = \\frac{\\overline{B} \\cdot \\overline{D} + B \\cdot D}{1} = \\overline{B \\oplus D} $$
+Notice that ~~F = A'B' + CD~~ corner minterms wrap around to yield $F = \\overline{B}\\,\\overline{D} + BD$:
+[DIAGRAM: schematic | type=flipflop | ff=SR | target=T]`,
 
-Step 3: Realization using basic logic gates:
-[DIAGRAM: circuit | expr=(B' AND D') OR (B AND D)]`,
+    calc_physics: `# Probability, Statistics & Stochastic Processes
+Date: Oct 22, 2026    Submission: Handwritten Derivation
 
-    calc_physics: `# Multivariable Calculus & Linear Systems
-Date: Oct 21, 2026    Section: B-2
+Q4 & Q7: Density Transformation & Binomial Expectation Identity:
+Given $f(x) = \\frac{8}{\\pi}\\sqrt{x(1-x)}$ on $0 < x < 1$, for $X \\sim \\text{Binomial}(n, p)$:
+$$ E\\left[\\frac{1}{X+1}\\right] = \\sum_{k=0}^{n} \\frac{1}{k+1} \\binom{n}{k} p^k (1-p)^{n-k} = \\frac{1 - (1-p)^{n+1}}{(n+1)p} $$
 
-Problem 1: Evaluate the Gaussian damped harmonic integral and state transition matrix.
-Given the differential operator equation:
-$$ I(\\alpha) = \\int_{0}^{\\infty} \\frac{\\sin(\\omega x) \\cdot e^{-\\alpha x}}{\\sqrt{x^2 + \\delta^2}} dx $$
+Q9: Concentric Target Scoring Discs ($r_1 = \\frac{1}{\\sqrt{3}}, r_2 = 1, r_3 = \\sqrt{3}$):
+With radial density $f(r) = \\frac{2}{\\pi(1+r^2)}$, each ring's probability integral is:
+[DIAGRAM: canvas2d | circles=0.58:4 pts (1/sqrt(3)),1.0:3 pts (r=1),1.73:2 pts (sqrt(3)) | label=E[Score] = 9.583]
 
-For the coupled linear oscillator, the state Jacobian matrix is:
-$$ J(x, y) = \\begin{bmatrix} \\frac{\\partial f_1}{\\partial x} & -\\omega_0^2 \\\\ \\gamma & \\frac{\\partial f_2}{\\partial y} \\end{bmatrix} \\cdot \\begin{bmatrix} x_1 \\\\ x_2 \\end{bmatrix} $$
+Q10: Conditional Density $f(x) = 4x^3$ shaded on $[1/3, 2/3]$:
+[DIAGRAM: canvas2d | fn=4*x^3 | domain=0,1 | shade=0.33,0.67 | xlabel=x | ylabel=f(x) | label=f(x)=4x^3]`,
 
-Below is the sketched phase-plane damped response curve $y(t) = e^{-0.3t}\\cos(3t)$:
-[DIAGRAM: plot | fn=damped_sine | label=Underdamped Response y(t)]
+    cs_dfa: `# Theory of Computation & Computer Systems (PCS)
+Topic: Automata, 5-Stage Instruction Pipelining & RTL Microoperations
 
-Therefore, the eigenvalues satisfy $\\lambda_{1,2} = -\\zeta\\omega_n \\pm \\omega_n\\sqrt{\\zeta^2 - 1}$.`,
-
-    cs_dfa: `# Theory of Computation — Homework 3
-Topic: Deterministic Finite Automata (DFA) & Parse Trees
-
-Q1: Design a minimal DFA over alphabet $\\Sigma = \\{0, 1\\}$ that accepts all binary strings ending with the substring "01".
-
-Formal 5-Tuple Definition:
+1. Minimal DFA Accepting Binary Strings Ending in "01":
 $$ M = \\left( \\{q_0, q_1, q_2\\}, \\{0, 1\\}, \\delta, q_0, \\{q_2\\} \\right) $$
+[DIAGRAM: dfa | states=q0,q1,q2 | accept=q2 | edges=q0->q1:0,q1->q2:1,q0->q0:1,q1->q1:0,q2->q1:0]
 
-State Transition Diagram:
-[DIAGRAM: dfa | states=q0,q1,q2 | accept=q2]
+2. Five-Stage Instruction Pipeline Timing Diagram ($k=5, n=4$):
+[DIAGRAM: grid | cols=Cycle,1,2,3,4,5,6,7,8 | rows=I1~IF~ID~EX~MEM~WB~~~;I2~~IF~ID~EX~MEM~WB~~;I3~~~IF~ID~EX~MEM~WB~;I4~~~~IF~ID~EX~MEM~WB]
 
-Transition Function Table Verification:
-If input $w = 1001$, path is ~~q0 -> q1 -> q0~~ $q_0 \\rightarrow q_0 \\rightarrow q_1 \\rightarrow q_1 \\rightarrow q_2$ (Accepted).
-
-Recurrence relation for state space complexity:
-$$ T(n) = 2 T\\left(\\frac{n}{2}\\right) + \\sqrt{n \\log n} $$`
+3. Basic Computer Fetch & Execute Microoperations:
+$$ \\begin{aligned} T_0 &: AR \\leftarrow PC \\\\ T_1 &: IR \\leftarrow M[AR], \\; PC \\leftarrow PC + 1 \\\\ D_4 T_3 &: DR \\leftarrow M[AR], \\; D_4 T_4 : AC \\leftarrow AC + DR \\end{aligned} $$`
 };
+
+export default PRESETS;

@@ -149,9 +149,11 @@ export function renderFullPage() {
         // C. Check for Heading (# Title)
         let lineFontSize = baseFontSize;
         let underlineHeading = false;
-        if (line.startsWith('# ')) {
-            line = line.slice(2);
-            lineFontSize = baseFontSize * 1.18;
+        const headingMatch = line.match(/^(#{1,6})\s+(.*)$/);
+        if (headingMatch) {
+            const level = headingMatch[1].length;
+            line = headingMatch[2];
+            lineFontSize = baseFontSize * (level === 1 ? 1.18 : level === 2 ? 1.10 : 1.04);
             underlineHeading = true;
         }
 
