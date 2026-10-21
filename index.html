@@ -5,15 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ScriptForge — Dynamic Stroke, 2D Math & Hand-Drawn Diagram Engine</title>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231b3b8c'/%3E%3Cpath d='M8 23.5 L19.5 9 L24 13.2 L12.4 25.2 L8 26 Z' fill='%23fbfaf3'/%3E%3C/svg%3E">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Rough.js for hand-sketched geometric primitives -->
-    <script src="https://cdn.jsdelivr.net/npm/roughjs@4.6.6/bundled/rough.js"></script>
+    <!-- Rough.js for hand-sketched geometric primitives (vendored, MIT, see assets/vendor/rough.LICENSE) -->
+    <script src="assets/vendor/rough.js"></script>
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@1.61.0"></script>
-    <!-- Google Fonts for UI and Base Glyph Extraction -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=Indie+Flower&family=Kalam:wght@300;400;700&family=Patrick+Hand&family=Shadows+Into+Light&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <!-- Handwriting + UI fonts, self-hosted (see assets/fonts/NOTICE.md) -->
+    <link rel="stylesheet" href="assets/styles/fonts.css">
+    <link rel="stylesheet" href="assets/styles/tailwind.css">
     <link rel="stylesheet" href="assets/styles/app.css">
 </head>
 <body class="min-h-screen flex flex-col selection:bg-indigo-500 selection:text-white">

@@ -38,9 +38,18 @@ python3 -m http.server 8000
 npx serve .
 ```
 
-> **Network required on first load.** Tailwind, Rough.js, Lucide and the handwriting fonts are
-> loaded from CDNs. Offline, the page will still load but the layout and sketching will be
-> degraded.
+> **Network is optional.** Rough.js is vendored at `assets/vendor/rough.js`, Tailwind is
+> compiled ahead of time into `assets/styles/tailwind.css`, and the handwriting webfonts are
+> self-hosted under `assets/fonts/`. Layout, sketching and handwriting all work fully offline.
+> Only the Lucide icon set is still fetched from a CDN; without it the icons simply disappear
+> and every button keeps working through its text label.
+>
+> **Editing Tailwind classes?** `assets/styles/tailwind.css` is generated, not hand-edited.
+> After adding or removing a utility class in `index.html` or `src/`, regenerate it:
+>
+> ```bash
+> node scripts/build-tailwind.mjs
+> ```
 
 ## Document markup
 
@@ -51,9 +60,12 @@ The editor accepts plain prose plus a small markup language:
 | `# Heading` | Larger, hand-underlined heading |
 | `$$ ... $$` | Display 2D math on its own lines |
 | `$ ... $` | Inline 2D math inside a sentence |
-| `[DIAGRAM: kmap \| ones=0,2,5,7]` | A Karnaugh map with those minterms set |
-| `[DIAGRAM: circuit]` | A logic-gate schematic |
-| `[DIAGRAM: dfa]` | A state automaton |
+| `[DIAGRAM: grid \| cols=A,B \| rows=1~2,3~4]` | A hand-ruled table |
+| `[DIAGRAM: bitfield \| bits=32 \| fields=Op:6,R1:4,Unused:22]` | A segmented register strip |
+| `[DIAGRAM: kmap \| vars=A,B,C,D \| ones=0,2,5,7]` | A Karnaugh map with those minterms set |
+| `[DIAGRAM: circuit \| nodes=... \| edges=...]` | A logic-gate schematic |
+| `[DIAGRAM: dfa \| states=q0,q1 \| transitions=...]` | A state automaton |
+| `[DIAGRAM: tree \| nodes=... \| edges=...]` | A binary tree |
 | `[DIAGRAM: plot \| label=Response]` | A damped-response function plot |
 | `[DIAGRAM: custom_image]` | A contour trace of an uploaded image |
 | `~~wrong term~~` | A multi-pass pen scratch-out |
@@ -62,9 +74,14 @@ The editor accepts plain prose plus a small markup language:
 
 ```
 index.html                  Shell markup. Controls declare intent via data-action / data-arg.
-assets/styles/app.css       Extracted stylesheet.
+assets/styles/app.css       Extracted stylesheet (project overrides).
+assets/styles/tailwind.css  Generated Tailwind bundle. Rebuild with scripts/build-tailwind.mjs.
+assets/vendor/rough.js      Vendored Rough.js 4.6.6 (MIT) — the sketching dependency.
+assets/fonts/               Self-hosted handwriting webfonts (WOFF2, OFL 1.1).
+assets/styles/fonts.css     @font-face rules for the self-hosted fonts.
 docs/screenshot.png         Rendered sample page.
 scripts/serve.mjs           Zero-dependency static dev server.
+scripts/build-tailwind.mjs  Offline Tailwind compiler for assets/styles/tailwind.css.
 src/
   main.js                   Entry point: boots the studio on window load.
   core/
@@ -77,15 +94,18 @@ src/
   render/
     glyph.js                Allographic glyph + word rendering (the zero-clone engine).
     math/
-      parser.js             LaTeX -> 2D AST (fractions, integrals, matrices, radicals).
-      measure.js            AST bounding-box measurement.
-      renderer.js           AST -> hand-drawn strokes.
+      parser.js             LaTeX -> recursive 2D box AST (supsub, frac, binom, sqrt,
+                            accent, bigop, delim, matrix).
+      measure.js            AST bounding-box measurement + ruled-line snap invariant.
+      renderer.js           AST -> hand-drawn strokes, stretchy delimiters.
     diagrams/
       index.js              Dispatcher: parses the spec, builds the ink style, routes by type.
-      primitives.js         Rounded rectangle and arrowhead helpers.
-      kmap.js               Karnaugh map with implicant loops.
-      circuit.js            IEEE logic-gate schematic.
-      dfa.js                Deterministic finite automaton.
+      primitives.js         Rounded rects, arrows, curly braces, hachure, logic gates.
+      grid.js               Universal grid engine: tables, bitfields, K-maps, array strips.
+      schematic.js          Universal schematic engine: circuits, automata, trees, lists.
+      kmap.js               Legacy alias -> grid.js.
+      circuit.js            Legacy alias -> schematic.js.
+      dfa.js                Legacy alias -> schematic.js.
       plot.js               Function plot with damping envelope.
       customImage.js        Vectorized uploaded-image contours.
     paper.js                Stationery background, spine shadow, camera lighting.
@@ -114,9 +134,22 @@ src/
 
 ## Known limitations
 
-- Only the `ones` (K-map) and `label` (plot) diagram parameters are actually honoured.
-  `vars=`, `expr=`, `states=`, `accept=` and `fn=` are parsed into the diagram context but the
-  renderers still draw their default geometry — see `src/render/diagrams/circuit.js` and `dfa.js`.
+- **Multi-page is not implemented yet.** `src/render/page.js` lays the document out on a single
+  canvas and drops anything past the last ruled line. There is no `#pagesContainer`, no
+  `.notebook-page-canvas`, no `src/render/pdfExport.js`, and the export button downloads a
+  single PNG rather than a multi-page PDF.
+- **Wave 2 engines are not implemented yet.** `src/render/diagrams/canvas2d.js` and
+  `src/render/diagrams/svgAdapter.js` do not exist, so `[DIAGRAM: svg | <svg>...]` is not
+  renderable and `fn=` on a plot is still ignored. `src/pipeline/vectorize.js` still uses
+  luminance-gradient edge detection rather than Zhang-Suen thinning with Douglas-Peucker
+  simplification, so uploaded images trace hollow double-edges.
+- **The glyph bank has one skeleton per character.** `src/render/glyph.js` warps a single
+  webfont outline per instance; there are no distinct structural allographs, and the ink
+  "velocity" term is index-derived noise rather than a real pen-speed signal. The Proof of
+  Zero-Clone inspector shows the slant delta (`Δθ`) only, not the warp seed, scale matrix or
+  ligature links.
+- **Diagram parameters are only partly honoured.** `vars=`, `expr=`, `states=`, `accept=` and
+  `fn=` are parsed into the diagram context but the renderers still draw default geometry.
 - The DFA renderer's return arcs from the accepting state are drawn as smooth curves but are not
   yet annotated with their transition labels.
 - The optional Gemini key in the VLM modal is read from the DOM and sent directly to Google's
