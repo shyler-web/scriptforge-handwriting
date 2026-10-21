@@ -39,9 +39,13 @@ function collectCandidates(files) {
         if (cls && !cls.includes('${')) candidates.add(cls);
       }
     }
-    for (const m of src.matchAll(/classList\.(?:add|remove|toggle)\(\s*["'`]([^"'`]+)["'`]/g)) {
-      for (const cls of m[1].split(/\s+/)) {
-        if (cls && !cls.includes('${')) candidates.add(cls);
+    // classList.add/remove/toggle take the class names as string arguments —
+    // collect every string argument, not just the first one.
+    for (const m of src.matchAll(/classList\.(?:add|remove|toggle)\(([^)]*)\)/g)) {
+      for (const sm of m[1].matchAll(/["'`]([^"'`]+)["'`]/g)) {
+        for (const cls of sm[1].split(/\s+/)) {
+          if (cls && !cls.includes('${')) candidates.add(cls);
+        }
       }
     }
     for (const m of src.matchAll(/className\s*=\s*["'`]([^"'`]+)["'`]/g)) {

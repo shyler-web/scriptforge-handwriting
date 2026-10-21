@@ -100,6 +100,18 @@ async function main() {
   await S('Log.enable');
   await S('Network.enable');
 
+  // Headless Chrome clamps --window-size to a 500px minimum width, so a real
+  // phone viewport needs an explicit device-metrics override.
+  if (process.env.QA_VIEWPORT) {
+    const [vw, vh] = VIEWPORT.split(',').map(Number);
+    await S('Emulation.setDeviceMetricsOverride', {
+      width: vw || 375,
+      height: vh || 812,
+      deviceScaleFactor: Number(process.env.QA_DSF) || 2,
+      mobile: true,
+    });
+  }
+
   const consoleErrors = [];
   const exceptions = [];
   const failedRequests = [];

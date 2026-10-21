@@ -134,8 +134,12 @@ export function switchMobileTab(tabName) {
     });
     document.querySelectorAll('[data-action="mobileTab"]').forEach(btn => {
         const active = btn.getAttribute('data-arg') === tabName;
+        // Tailwind's `border` utility inherits `currentColor`, so an inactive tab
+        // must keep an explicit `border-transparent` instead of losing its colour.
         btn.classList.toggle('text-indigo-400', active);
+        btn.classList.toggle('text-slate-300', !active);
         btn.classList.toggle('border-indigo-500', active);
+        btn.classList.toggle('border-transparent', !active);
     });
 }
 
