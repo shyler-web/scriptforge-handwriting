@@ -4,3 +4,11 @@ dist/
 .DS_Store
 .env
 .env.*
+
+# Validation corpus: handwritten assignment scans carry personal identifiers and
+# the course syllabi are copyrighted. This repo is public, so keep them local.
+demo_assignments/
+
+# Generated knowledge-graph artifacts. graph.json embeds nodes extracted from
+# demo_assignments/, so it stays local with them.
+graphify-out/

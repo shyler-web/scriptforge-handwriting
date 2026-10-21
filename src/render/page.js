@@ -15,6 +15,31 @@ import { renderMathAST } from './math/renderer.js';
 import { renderHandSketchedDiagram } from './diagrams/index.js';
 import { drawPaperBackground, applyCameraLightingAndSpine } from './paper.js';
 
+/**
+ * True when a `[DIAGRAM: ...]` block is terminated.
+ * A bare `]` closes the block, unless the payload embeds an `<svg>...</svg>`
+ * island whose own `]` characters must not be mistaken for the terminator.
+ */
+function isDiagramBlockClosed(block) {
+    const lower = block.toLowerCase();
+    const svgStart = lower.indexOf('<svg');
+    if (svgStart !== -1) {
+        const svgEnd = lower.indexOf('</svg>', svgStart);
+        if (svgEnd === -1) return false;
+        return block.slice(svgEnd + 6).includes(']');
+    }
+    return block.includes(']');
+}
+
+/**
+ * Collapses a multi-line diagram payload onto one logical line so that the
+ * dispatcher's `|`-separated parts stay intact and every `key=value` value
+ * stays a clean single-line string.
+ */
+function normalizeDiagramSpec(spec) {
+    return String(spec || '').replace(/\r\n?/g, '\n').replace(/\s*\n\s*/g, ' ').trim();
+}
+
 export function renderFullPage() {
     const t0 = performance.now();
 
@@ -74,17 +99,27 @@ export function renderFullPage() {
             continue;
         }
 
-        // A. Check for [DIAGRAM: ...] block
-        const diagMatch = line.trim().match(/^\[DIAGRAM:\s*(.+)\]$/i);
-        if (diagMatch) {
-            const startY = getBaselineY(curLineIdx) - lineSpacing * 0.65;
-            const usedH = renderHandSketchedDiagram(
-                ctx, rc, diagMatch[1],
-                leftMargin + 12, startY, rightMargin - leftMargin,
-                charCounterRef, opts
-            );
-            curLineIdx += Math.ceil(usedH / lineSpacing);
-            continue;
+        // A. Check for [DIAGRAM: ...] block (the payload may span several lines)
+        const diagTrimmed = line.trim();
+        if (/^\[DIAGRAM:/i.test(diagTrimmed)) {
+            let block = diagTrimmed;
+            let j = l + 1;
+            while (!isDiagramBlockClosed(block) && j < lines.length) {
+                block += '\n' + lines[j].trim();
+                j++;
+            }
+            const diagMatch = block.match(/^\[DIAGRAM:\s*([\s\S]+)\]$/i);
+            if (diagMatch) {
+                const startY = getBaselineY(curLineIdx) - lineSpacing * 0.65;
+                const usedH = renderHandSketchedDiagram(
+                    ctx, rc, normalizeDiagramSpec(diagMatch[1]),
+                    leftMargin + 12, startY, rightMargin - leftMargin,
+                    charCounterRef, opts
+                );
+                curLineIdx += Math.ceil(usedH / lineSpacing);
+                l = j - 1;
+                continue;
+            }
         }
 
         // B. Check for 2D Display Math Block $$ ... $$
@@ -92,17 +127,21 @@ export function renderFullPage() {
         if (displayMathMatch) {
             const latex = displayMathMatch[1].trim();
             const ast = parseLatexToAST(latex);
-            const m = measureMathAST(ast, baseFontSize * 1.04);
+            const m = measureMathAST(ast, baseFontSize * 1.04, lineSpacing);
 
             // Allocate enough vertical ruled lines so numerators/denominators/matrices never collide
-            const extraLinesTop = Math.max(0, Math.ceil((m.ascent - 18) / lineSpacing));
+            const extraLinesTop = typeof m.linesAbove === 'number'
+                ? m.linesAbove
+                : Math.max(0, Math.ceil((m.ascent - 0.65 * lineSpacing) / lineSpacing));
             curLineIdx += extraLinesTop;
 
             const mathY = getBaselineY(curLineIdx);
             const mathX = leftMargin + Math.max(24, (rightMargin - leftMargin - m.width) * 0.32);
             renderMathAST(ctx, rc, ast, mathX, mathY, baseFontSize * 1.04, charCounterRef, opts);
 
-            const extraLinesBot = Math.max(1, Math.ceil((m.descent + 16) / lineSpacing));
+            const extraLinesBot = typeof m.linesBelow === 'number'
+                ? m.linesBelow
+                : Math.max(1, Math.ceil((m.descent + 0.35 * lineSpacing) / lineSpacing));
             curLineIdx += extraLinesBot;
             continue;
         }
@@ -132,7 +171,7 @@ export function renderFullPage() {
             if (tok.startsWith('$') && tok.endsWith('$') && tok.length > 2) {
                 const inlineLatex = tok.slice(1, -1);
                 const ast = parseLatexToAST(inlineLatex);
-                const m = measureMathAST(ast, lineFontSize * 0.94);
+                const m = measureMathAST(ast, lineFontSize * 0.94, lineSpacing);
 
                 if (curX + m.width > rightMargin) {
                     curLineIdx++;

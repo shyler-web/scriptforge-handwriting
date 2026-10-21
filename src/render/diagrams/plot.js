@@ -1,6 +1,34 @@
 import { drawSharpArrowhead } from './primitives.js';
 import { drawHandwrittenWord, drawAllographicChar } from '../glyph.js';
 
+const DEFAULT_INK = {
+    color: '#1b3b8c',
+    secondary: '#2952b3',
+    accent: '#b91c1c',
+    alpha: 0.94,
+    widthScale: 1.0
+};
+
+const DEFAULT_OPTS = {
+    fontFamily: 'Caveat',
+    glyphWarp: 0.65,
+    baselineDrift: 0.45,
+    pressureVar: 0.55,
+    slantAngle: -4,
+    enableLigatures: true,
+    diagRoughness: 0.55,
+    diagBowing: 0.60,
+    singlePassStroke: true
+};
+
+function resolveOpts(opts) {
+    const merged = { ...(opts || {}) };
+    for (const key of Object.keys(DEFAULT_OPTS)) {
+        if (merged[key] === undefined) merged[key] = DEFAULT_OPTS[key];
+    }
+    return merged;
+}
+
 export function drawPlot(d) {
     // 4. SHARP HAND-SKETCHED MATHEMATICAL FUNCTION PLOT WITH ENVELOPE & TICKS
     const ox = d.startX + 60;
@@ -54,8 +82,33 @@ export function drawPlot(d) {
         seed: d.charCounterRef.count++
     });
 
-    if (d.params.label) {
-        drawHandwrittenWord(d.ctx, d.params.label, ox + 135, oy - 42, 20, d.charCounterRef, d.opts);
+    // `label` is honoured today; `fn`/`domain`/`shade` need the Wave 2 math evaluator.
+    const label = d.params && d.params.label ? String(d.params.label) : '';
+    if (label) {
+        drawHandwrittenWord(d.ctx, label, ox + 135, oy - 42, 20, d.charCounterRef, d.opts);
     }
     return h + 20;
 }
+
+/**
+ * Wave 1 dispatcher adapter.
+ * New-style positional signature expected by `src/render/diagrams/index.js`:
+ *   renderPlot(ctx, rc, params, startX, startY, availWidth, charCounterRef, opts, ink, roughOpts)
+ * Builds the legacy `d` bag and delegates to `drawPlot(d)`.
+ */
+export function renderPlot(ctx, rc, params, startX, startY, availWidth, charCounterRef, opts, ink, roughOpts) {
+    const d = {
+        ctx,
+        rc,
+        params: params || {},
+        startX: startX || 0,
+        startY: startY || 0,
+        roughOpts: roughOpts || {},
+        ink: ink || DEFAULT_INK,
+        opts: resolveOpts(opts),
+        charCounterRef: charCounterRef || { count: 1 }
+    };
+    return drawPlot(d);
+}
+
+export default renderPlot;
