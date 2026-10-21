@@ -18,6 +18,11 @@ import { drawPaperBackground, applyCameraLightingAndSpine } from './paper.js';
 export function renderFullPage() {
     const t0 = performance.now();
 
+    if (typeof rough === 'undefined') {
+        document.getElementById('renderTimer').textContent = 'rough.js unavailable';
+        return;
+    }
+
     const canvas = document.getElementById('notebookCanvas');
     // Ensure 2x HiDPI backing store resolution for razor-sharp rendering
     if (canvas.width !== LOGICAL_W * HI_DPI || canvas.height !== LOGICAL_H * HI_DPI) {

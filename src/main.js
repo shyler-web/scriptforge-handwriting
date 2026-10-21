@@ -9,7 +9,7 @@ import { scheduleRender } from './ui/controls.js';
 import { initEvents } from './ui/events.js';
 
 window.addEventListener('load', function() {
-    lucide.createIcons();
+    if (typeof lucide !== 'undefined') lucide.createIcons();
     document.getElementById('docInput').value = PRESETS.ee_kmap;
     document.getElementById('docInput').addEventListener('input', scheduleRender);
     initEvents();
