@@ -42,3 +42,10 @@ input[type="range"] {
     visibility: hidden;
     pointer-events: none;
 }
+
+/* Mobile Tab Visibility (<1024px) */
+@media (max-width: 1023px) {
+    .mobile-hidden {
+        display: none !important;
+    }
+}

@@ -20,6 +20,14 @@ letters on the page are ever identical.
   contours and re-drawn with pen tremor.
 - **Paper and camera realism** — ruled / quad-grid / Cornell stationery, fibre grain, spine
   curvature, phone-camera shadow and vignette.
+- **Multi-page flow** — long documents paginate automatically across `Page 1..N` canvases.
+  Diagrams and display equations are never sliced at a page break, and every page gets its own
+  deterministic offset seed so grain, margin drift and vignettes differ page to page.
+- **Client-side PDF export** — `Export PDF` compiles every rendered page into a genuine
+  multi-page PDF (PDF 1.4, one JPEG XObject per page) in the browser, with no server and no
+  PDF library.
+- **Responsive studio** — below 1024 px the editor, page preview and ink/physics panels become
+  three switchable tabs, so the same build works on a 375 px phone.
 
 ## Running it
 
@@ -72,6 +80,7 @@ The editor accepts plain prose plus a small markup language:
 | `[DIAGRAM: svg \| <svg viewBox="0 0 200 120">...</svg>]` | Any raw SVG, re-inked by hand |
 | `[DIAGRAM: custom_image]` | A 1px skeleton trace of an uploaded image |
 | `~~wrong term~~` | A multi-pass pen scratch-out |
+| `---PAGE---` | A forced page break (the flow also breaks pages automatically) |
 
 `fn=` accepts a small expression language — numbers, `x`, `pi`, `e`, the operators
 `+ - * / % ^`, parentheses, implicit products like `2x`, and an allowlist of
@@ -92,6 +101,8 @@ assets/styles/fonts.css     @font-face rules for the self-hosted fonts.
 docs/screenshot.png         Rendered sample page.
 scripts/serve.mjs           Zero-dependency static dev server.
 scripts/build-tailwind.mjs  Offline Tailwind compiler for assets/styles/tailwind.css.
+scripts/qa/harness.mjs      Headless-Chrome QA driver: runs an assertion module against :8000.
+scripts/qa/*.assertions.js  Per-wave assertion suites (wave1 / wave2 / wave3).
 src/
   main.js                   Entry point: boots the studio on window load.
   core/
@@ -121,9 +132,10 @@ src/
       plot.js               Function plot with damping envelope.
       customImage.js        Vectorized uploaded-image contours.
     paper.js                Stationery background, spine shadow, camera lighting.
-    page.js                 Full-page compositor — lays the document out on the canvas.
+    page.js                 Multi-page compositor — lays the document out across Page 1..N.
+    pdfExport.js            Zero-dependency multi-page PDF 1.4 writer + PNG export.
   pipeline/
-    vectorize.js            Image -> luminance-gradient edges -> chained polylines.
+    vectorize.js            Image -> Zhang-Suen 1px skeleton -> Douglas-Peucker polylines.
   ui/
     controls.js             The actions the interface can trigger.
     events.js               Delegated data-action wiring.
@@ -146,15 +158,17 @@ src/
 
 ## Known limitations
 
-- **Multi-page is not implemented yet.** `src/render/page.js` lays the document out on a single
-  canvas and drops anything past the last ruled line. There is no `#pagesContainer`, no
-  `.notebook-page-canvas`, no `src/render/pdfExport.js`, and the export button downloads a
-  single PNG rather than a multi-page PDF.
-- **Wave 2 engines are not implemented yet.** `src/render/diagrams/canvas2d.js` and
-  `src/render/diagrams/svgAdapter.js` do not exist, so `[DIAGRAM: svg | <svg>...]` is not
-  renderable and `fn=` on a plot is still ignored. `src/pipeline/vectorize.js` still uses
-  luminance-gradient edge detection rather than Zhang-Suen thinning with Douglas-Peucker
-  simplification, so uploaded images trace hollow double-edges.
+- **Multi-page is implemented, but pagination is coarse.** `src/render/page.js` flows the
+  document across `Page 1..N` canvases inside `#pagesContainer` and `src/render/pdfExport.js`
+  compiles them into a real multi-page PDF. The block-height estimate that decides where to
+  break is an upper bound, so a page can end early rather than clip; display equations are kept
+  whole, but a long inline `$...$` that would straddle a break is moved down a line rather than
+  split across two pages.
+- **Wave 2 engines are landed.** `canvas2d.js` and `svgAdapter.js` exist and route correctly.
+  Two caveats remain: `fn=` only understands the whitelisted expression language above (not a
+  general-purpose parser), and `src/render/diagrams/plot.js` is now a thin alias onto
+  `canvas2d.js`, so the old hardcoded damped sine is only reachable through the `damped_sine`
+  preset.
 - **The glyph bank has one skeleton per character.** `src/render/glyph.js` warps a single
   webfont outline per instance; there are no distinct structural allographs, and the ink
   "velocity" term is index-derived noise rather than a real pen-speed signal. The Proof of
