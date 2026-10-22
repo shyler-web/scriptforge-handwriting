@@ -14,9 +14,9 @@
 
 ### Deviation from the spec (deliberate)
 
-Spec §5.4 proposed giving `scripts/serve.mjs` an optional **root** argument and serving the reader from `/home/`. This plan instead mounts the chapters at a **path** (`/notes`) via `notes.config.json`, keeping the server root at the repo root.
+Spec §5.4 originally proposed giving `scripts/serve.mjs` an optional **root** argument and serving the reader from `/home/`. This plan implements **both**: an optional root argument *and* a path mount (`/notes`) declared in `notes.config.json`, with the mount always resolved relative to the repository root.
 
-Reason: the QA harness imports project modules by absolute path (`/src/render/...`). Changing the server root would break that convention for every existing assertion suite and force the notes suite to use a second, different import prefix. A path mount keeps `notes.html` at `/notes.html`, keeps every module import uniform, and leaves `npm run dev` unchanged for the main studio.
+Reason: the QA harness imports project modules by absolute path (`/src/render/...`). A server root of `/home/` would break that convention for every existing assertion suite. The path mount keeps `notes.html` at `/notes.html` and every module import uniform under the default root, while the alternate root still gives the `/ScriptForge/notes.html` URL from the spec's Definition of Done.
 
 ## Global Constraints
 
@@ -38,6 +38,7 @@ Reason: the QA harness imports project modules by absolute path (`/src/render/..
 4. Headings are `#` … `######`.
 5. Each `[DIAGRAM: …]` block occupies one source line.
 6. `---PAGE---` forces a page break; pagination is otherwise automatic.
+7. **No `|` inside any `[DIAGRAM: …]` parameter value.** `src/render/diagrams/index.js` splits the whole spec on `|`, so a pipe inside a value silently truncates that value and starts a new parameter. The engine sanitises `caption=`; every other value must be authored pipe-free.
 
 ### Graph grammar spec (fixed by the design doc)
 
@@ -53,13 +54,18 @@ Reason: the QA harness imports project modules by absolute path (`/src/render/..
 
 ## Review Focus
 
-Five input classes the design implies that no happy-path test would catch:
+Ten input classes the design implies that no happy-path test would catch:
 
 1. **An edge naming an undeclared node** (`edges=A-Z` when only `A,B` are declared) must be dropped with a recorded warning — never drawn as a phantom node.
 2. **A chapter file that is missing, empty, or not valid Markdown** must produce an explicit error state in the reader, never a blank notebook page.
 3. **A graph figure whose estimated height is smaller than its drawn height** would overlap the following text line. The height estimate must be an upper bound for every spec.
 4. **A `[DIAGRAM: graph]` spec with no `nodes=` parameter** must degrade to a labelled "no nodes" placeholder rather than throwing inside the compositor.
 5. **`nodes=` containing a duplicate id** must keep one node and record a warning, not draw two overlapping circles.
+6. **A self-loop `A-A`** must draw as a visible loop above the vertex, not as a zero-length line that vanishes.
+7. **A single vertex with no edges** must produce one finite position — the circular layout must not divide by zero or emit `NaN`.
+8. **A `caption=` containing a `|`** — `src/render/diagrams/index.js` splits the whole spec on `|`, so the caption truncates and a stray parameter appears. The engine must sanitise the caption, not trust the author.
+9. **Duplicate undirected edges `A-B,B-A`** must be drawn once, not twice.
+10. **`highlight=` naming an edge that does not exist, and `levels=` naming a vertex that does not exist** must be ignored, not crash the layout.
 
 ---
 
@@ -527,6 +533,7 @@ git commit -m "feat(render): render bullet and callout line styles in the compos
 - Consumes: nothing.
 - Produces:
   - `resolveMountPath(mount: string, chaptersDir: string, relativePath: string) -> string|null` from `scripts/serve-paths.mjs`
+  - `stripRootPrefix(pathname: string, rootPrefix: string) -> string` from `scripts/serve-paths.mjs`
   - `notes.config.json` at the repo root: `{ "mount": "/notes", "chaptersDir": "../../Discrete Mathematics/Notes" }`
 
 - [ ] **Step 1: Write the failing test**
@@ -536,6 +543,7 @@ Append to `scripts/verify-graph.mjs`:
 ```js
 const spMod = (await importProjectModule('../scripts/serve-paths.mjs')).mod;
 const resolveMountPath = spMod && spMod.resolveMountPath ? spMod.resolveMountPath : () => null;
+const stripRootPrefix = spMod && spMod.stripRootPrefix ? spMod.stripRootPrefix : (p) => p;
 
 const cfg = JSON.parse(fs.readFileSync(new URL('../notes.config.json', import.meta.url), 'utf8'));
 assert(cfg.mount === '/notes', 'notes.config.json declares the /notes mount');
@@ -550,6 +558,11 @@ assert(escaped === null, 'resolveMountPath refuses a path that escapes the chapt
 
 const notUnder = resolveMountPath('/other', cfg.chaptersDir, '03-trees.md');
 assert(notUnder === null, 'resolveMountPath refuses a request outside the mount');
+
+assert(stripRootPrefix('/ScriptForge/notes/x.md', '/ScriptForge') === '/notes/x.md',
+  'stripRootPrefix removes the repository prefix used by the alternate server root');
+assert(stripRootPrefix('/notes/x.md', '/ScriptForge') === '/notes/x.md',
+  'stripRootPrefix leaves a path alone when the prefix is absent');
 ```
 
 Also add `import fs from 'node:fs';` to the top of `scripts/verify-graph.mjs` if it is not already present.
@@ -576,17 +589,27 @@ import path from 'node:path';
 export function resolveMountPath(mount, chaptersDir, relativePath) {
   // returns an absolute path inside chaptersDir, or null
 }
+
+export function stripRootPrefix(pathname, rootPrefix) {
+  // returns pathname without rootPrefix, or pathname unchanged
+}
 ```
-Rules: the mount must match exactly (`mount` normalised to start with `/` and not end with `/`); the relative path must not contain `..` segments after normalisation; the resolved path must stay inside the resolved `chaptersDir`; anything else returns `null`.
+
+`resolveMountPath` rules: the mount must match exactly (`mount` normalised to start with `/` and not end with `/`); the relative path must not contain `..` segments after normalisation; the resolved path must stay inside the resolved `chaptersDir`; anything else returns `null`.
+
+`stripRootPrefix` rules: when `rootPrefix` is `''` or `'/'`, return `pathname` unchanged. Otherwise, when `pathname` equals `rootPrefix` or starts with `rootPrefix + '/'`, return the remainder (prefixed with `/`, or `/` when empty); otherwise return `pathname` unchanged.
 
 `scripts/serve.mjs`:
-- read `notes.config.json` from the repo root at startup, tolerating its absence (then no mount is served).
-- in the request handler, before the normal path resolution, check whether the pathname starts with `${mount}/`; if so, compute `resolveMountPath(mount, chaptersDir, rest)`; when it returns a path, serve that file with `Content-Type: text/markdown; charset=utf-8`; when it returns `null`, fall through to the existing 403/404 handling.
+- keep `REPO_ROOT = resolve(import.meta.dirname, '..')`; change `ROOT` to `resolve(process.argv[3] || REPO_ROOT)` so the second CLI argument overrides the server root.
+- compute `ROOT_PREFIX`: when `ROOT` is not inside `REPO_ROOT`'s parent chain, derive it from the path segment between the server root and the repo root (e.g. `ROOT=/home/`, `REPO_ROOT=/home//projects/ScriptForge` → prefix `/ScriptForge`). When `ROOT === REPO_ROOT`, the prefix is `''`.
+- read `notes.config.json` from `REPO_ROOT` at startup, tolerating its absence (then no mount is served).
+- in the request handler, strip `ROOT_PREFIX` from the pathname first; then, if the stripped path starts with `${mount}/`, compute `resolveMountPath(mount, path.resolve(REPO_ROOT, chaptersDir), rest)`; when it returns a path, serve that file with `Content-Type: text/markdown; charset=utf-8`; when it returns `null`, fall through to the existing 403/404 handling.
 - add `'.md': 'text/markdown; charset=utf-8'` to `CONTENT_TYPES`.
 
 `package.json` — add scripts:
 ```json
-"verify": "node scripts/verify-waves.mjs && node scripts/verify-graph.mjs",
+"verify": "node scripts/verify-waves.mjs && node scripts/verify-graph.mjs && node scripts/verify-notes.mjs",
+"notes": "node scripts/serve.mjs 8000 ../..",
 "qa:graph": "node scripts/qa/harness.mjs scripts/qa/graph.assertions.js",
 "qa:notes": "node scripts/qa/harness.mjs scripts/qa/notes.assertions.js"
 ```
@@ -768,7 +791,7 @@ export async function loadChapterText(chapterId, cfg) { /* -> string */ }
 export function renderChapterText(text) { /* -> void */ }
 ```
 
-- `loadChapterText(chapterId, cfg)`: look the chapter up in `CHAPTER_BY_ID`; if it is absent, throw `new Error('Unknown chapter: ' + chapterId)`. `fetch(`${cfg.mount}/${chapter.file}`)`; if the response is not OK, throw `new Error('Chapter ' + chapterId + ' could not be loaded (HTTP ' + response.status + ')')`; return the response text.
+- `loadChapterText(chapterId, cfg)`: look the chapter up in `CHAPTER_BY_ID`; if it is absent, throw `new Error('Unknown chapter: ' + chapterId)`. Fetch the chapter at `new URL('.' + cfg.mount + '/' + chapter.file, document.baseURI)` — the mount is resolved **relative to the repository root**, so the reader works under either server root; if the response is not OK, throw `new Error('Chapter ' + chapterId + ' could not be loaded (HTTP ' + response.status + ')')`; return the response text.
 - `renderChapterText(text)`: set `#docInput`.value to `text` and call `renderFullPage()`.
 
 `notes.html` must:
@@ -777,7 +800,7 @@ export function renderChapterText(text) { /* -> void */ }
 - contain `#docInput` as a `hidden` textarea (the compositor reads `.value`);
 - contain `#chapterError` (hidden by default) and `#notesStatus`;
 - import `CHAPTERS` from `./src/notes/manifest.js`, `loadChapterText` and `renderChapterText` from `./src/notes/reader.js`, and `exportMultiPagePdf`, `exportCurrentPagePng` from `./src/render/pdfExport.js`;
-- on boot: fetch `/notes.config.json`, build the chapter list rows from `CHAPTERS`, load the first chapter, put its text into `#docInput`, and call `renderFullPage()`;
+- on boot: fetch the config with `new URL('notes.config.json', document.baseURI)`, build the chapter list rows from `CHAPTERS`, load the first chapter, put its text into `#docInput`, and call `renderFullPage()`;
 - each row carries `data-chapter-id` and shows the priority badge, the difficulty as `★` repeated `difficulty` times, the minutes, and the T9 problem numbers;
 - `#sortMode` is a `<select>` with `exam` (default) and `textbook` options; changing it re-orders the list (exam = `order`; textbook = the same order, which is the textbook order for the shipped manifest — keep the handler generic so a later manifest can differ);
 - when a chapter fails to load, show `#chapterError` with the error message and leave the previously rendered chapter on screen.
@@ -903,7 +926,18 @@ try {
     ['graph/bipartite','graph | nodes=L1,L2,R1,R2 | edges=L1-R1,L1-R2,L2-R1'],
     ['graph/tree',    'graph | nodes=R,A,B,C | edges=R-A,R-B,B-C'],
     ['graph/degrees', 'graph | nodes=A,B,C,D | edges=A-B,B-C,C-D,D-A | showDegrees=true'],
-    ['graph/highlight','graph | nodes=A,B,C,D | edges=A-B,B-C,C-D,D-A | highlight=A-B,B-C | highlightNodes=B']
+    ['graph/highlight','graph | nodes=A,B,C,D | edges=A-B,B-C,C-D,D-A | highlight=A-B,B-C | highlightNodes=B'],
+    // --- the figure-coverage acceptance list from spec section 4.6 ---
+    ['coverage/degreeLabels', 'graph | nodes=A,B,C,D,E | edges=A-B,B-C,C-D,D-E,E-A | layout=circular | showDegrees=true'],
+    ['coverage/bipartite',    'graph | nodes=A,B,C|D,E,F | edges=A-D,A-E,B-D,B-F,C-E,C-F | layout=bipartite'],
+    ['coverage/tree',         'graph | nodes=50,30,70,20,40 | edges=50-30,50-70,30-20,30-40 | layout=tree'],
+    ['coverage/spanningTree', 'graph | nodes=A,B,C,D,E | edges=A-B,B-C,C-D,D-E,A-E | highlight=A-B,B-C,C-D'],
+    ['coverage/hasse',        'graph | nodes=1,2,3,4,6,12 | edges=1-2,1-3,2-4,2-6,3-6,4-12,6-12 | layout=hasse | levels=1:0,2:1,4:2,6:2,3:1,12:3'],
+    ['coverage/cutVertex',    'graph | nodes=c,a,b,e | edges=c-a,c-b,c-e | highlightNodes=c'],
+    ['coverage/cutEdge',      'graph | nodes=c,a,b,e | edges=c-a,c-b,c-e | highlight=c-e'],
+    ['coverage/hamilton',     'graph | nodes=A,B,C,D | edges=A-B,B-C,C-D,D-A | highlight=A-B,B-C,C-D,D-A'],
+    ['coverage/layeredDir',   'graph | nodes=A,B,C,D | edges=A->B,B->C,C->D | layout=layered | directed=true'],
+    ['coverage/twoPaths',     'graph | nodes=a,b,c,d,x,y | edges=a-x,b-x,c-y,d-y,a-b,c-d | layout=layered | highlight=a-x,b-x,c-y,d-y']
   ];
 
   const off = document.createElement('canvas');
@@ -977,8 +1011,9 @@ node scripts/verify-graph.mjs
 node scripts/verify-notes.mjs
 node scripts/qa/harness.mjs scripts/qa/graph.assertions.js
 node scripts/qa/harness.mjs scripts/qa/notes.assertions.js
+node scripts/build-tailwind.mjs
 ```
-Expected: all verifiers report 0 failures and both QA suites exit 0.
+Expected: all verifiers report 0 failures, both QA suites exit 0, and the Tailwind build completes (it walks the repo root, so `notes.html` is scanned automatically — re-run it whenever a new utility class is added to the reader).
 
 Then confirm the pre-existing suites still pass:
 ```bash
