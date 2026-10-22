@@ -138,7 +138,7 @@ chapter should be written.
 | Parameter | Meaning |
 |---|---|
 | `nodes=` | comma list of node ids; `id:label` sets a custom label (`A:1,B:2`) |
-| `left=` / `right=` | the two sides of a bipartite graph, as comma lists (`left=A,B,C  right=D,E,F`). **These are separate parameters, not a `|` inside `nodes=`** — see §4.7 |
+| `left=` / `right=` | the two sides of a bipartite graph, as comma lists (`left=A,B,C  right=D,E,F`). **These are separate parameters, not a `|` inside `nodes=`** — see §4.2 |
 | `edges=` | comma list; `u-v` undirected, `u->v` directed, `u-v:label` carries an edge label |
 | `layout=` | `auto` · `layered` · `circular` · `bipartite` · `tree` · `hasse` |
 | `levels=` | `id:level,…` explicit vertical placement; used with `layout=hasse` |
@@ -148,7 +148,7 @@ chapter should be written.
 | `directed=` | `true` draws arrowheads |
 | `caption=` | a hand-written caption line beneath the figure |
 
-### 4.7 The `|` rule (binding on every grammar)
+### 4.2 The `|` rule (binding on every grammar)
 
 `src/render/diagrams/index.js` splits a whole diagram spec on `|`. Therefore:
 
@@ -162,7 +162,7 @@ chapter should be written.
 4. The `caption=` value is additionally sanitised by the graph engine (any residual pipe is
    replaced), so a malformed spec degrades instead of drawing a stray glyph.
 
-### 4.2 Layout algorithms
+### 4.3 Layout algorithms
 
 - **layered** — longest-path layering over the DAG of edges, then two barycenter sweeps to
   reduce edge crossings; orthogonal wire routing between layers.
@@ -174,7 +174,7 @@ chapter should be written.
 - **auto** — picks `hasse` if `levels=` is present, `bipartite` if `left=`/`right=` are
   present, `layered` for acyclic graphs, `circular` otherwise.
 
-### 4.3 Rendering
+### 4.4 Rendering
 
 Uses the existing `Rough.js` canvas (`rc`) so figures match the rest of the app's
 hand-drawn look, and reuses `src/render/diagrams/primitives.js` (`drawArrowLine`,
@@ -182,19 +182,19 @@ hand-drawn look, and reuses `src/render/diagrams/primitives.js` (`drawArrowLine`
 labels. Ink colour comes from the active `INK_PROFILES` entry, exactly like every other
 grammar.
 
-### 4.4 Height estimation
+### 4.5 Height estimation
 
 `graph.js` exports `estimateGraphHeight(params, availWidth)`. `page.js` imports it so the
 compositor reserves the right vertical space before drawing, preventing a figure from being
 sliced across a page break.
 
-### 4.5 Error surfacing
+### 4.6 Error surfacing
 
 The dispatcher currently swallows per-diagram failures with a `console.warn`. `state.js`
 grows a `diagramStats = { rendered, failed }` counter, incremented by the dispatcher on both
 paths, so the QA harness can assert `failed === 0` across every chapter.
 
-### 4.6 Figure coverage — what each chapter needs
+### 4.7 Figure coverage — what each chapter needs
 
 Every figure named here must exist as a `[DIAGRAM: …]` block in the corresponding chapter.
 These are the concrete acceptance list for the `graph` grammar.

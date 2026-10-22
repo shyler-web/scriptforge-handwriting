@@ -56,7 +56,7 @@ P1 · Difficulty ★★★ · <minutes> min · Lectures <L…> · T9 <P…>
 
 The exam core is sections 1–6 (8–12 pages). The reference section carries the full substance of the source Lesson, reformatted into the DSL — not a verbatim paste (a verbatim paste cannot render: see the DSL constraints).
 
-### Mandatory figures (spec §4.6)
+### Mandatory figures (spec §4.7)
 
 These figures are an acceptance list, not suggestions. Each named figure must exist as a `[DIAGRAM: …]` block in the stated chapter, in the stated spec shape.
 
@@ -631,7 +631,7 @@ Run before committing any chapter:
 | Every declared node is used | No `nodes=` entry missing from `edges=` or `levels=` unless intentional | reviewed |
 | Chapter renders | Open in `notes.html`, confirm ≥ 1 page and no literal `~`/`;` in grids | confirmed |
 | The chapter is the one the manifest names | File name matches `manifest.js` | matches |
-| Mandatory figures present | Each figure from the spec §4.6 table for this chapter exists in the stated spec shape | all present |
+| Mandatory figures present | Each figure from the spec §4.7 table for this chapter exists in the stated spec shape | all present |
 | ScriptForge-only rule | Grep the chapter for `<canvas`, `<svg`, `<img`, `!\[` | 0 matches |
 
 Full verification set before the final commit:

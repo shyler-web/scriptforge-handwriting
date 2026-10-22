@@ -971,7 +971,7 @@ try {
     ['graph/tree',    'graph | nodes=R,A,B,C | edges=R-A,R-B,B-C'],
     ['graph/degrees', 'graph | nodes=A,B,C,D | edges=A-B,B-C,C-D,D-A | showDegrees=true'],
     ['graph/highlight','graph | nodes=A,B,C,D | edges=A-B,B-C,C-D,D-A | highlight=A-B,B-C | highlightNodes=B'],
-    // --- the figure-coverage acceptance list from spec section 4.6 ---
+    // --- the figure-coverage acceptance list from spec section 4.7 ---
     ['coverage/degreeLabels', 'graph | nodes=A,B,C,D,E | edges=A-B,B-C,C-D,D-E,E-A | layout=circular | showDegrees=true'],
     ['coverage/bipartite',    'graph | nodes=A,B,C,D,E,F | left=A,B,C | right=D,E,F | edges=A-D,A-E,B-D,B-F,C-E,C-F | layout=bipartite'],
     ['coverage/tree',         'graph | nodes=50,30,70,20,40 | edges=50-30,50-70,30-20,30-40 | layout=tree'],
