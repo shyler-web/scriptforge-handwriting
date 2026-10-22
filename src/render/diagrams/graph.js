@@ -13,6 +13,8 @@
  * that they can be unit-tested in plain Node, without a DOM or a canvas.
  */
 
+import { drawArrowLine, drawSharpArrowhead, drawLabelOrMath } from './primitives.js';
+
 // Geometry of the figure box, in the local coordinate space where (0,0) is
 // the top-left corner. The renderer translates by (startX, startY).
 const NODE_R = 17;          // a vertex is drawn in a 34 x 34 box
@@ -502,6 +504,185 @@ function separateVertices(positions, ids, minDist, axis) {
 }
 
 /**
+ * Accepts either a raw parameter bag or an already-parsed spec, so that the
+ * renderer can be called with whatever the caller has to hand.
+ */
+function asSpec(params) {
+    if (params && Array.isArray(params.nodes) && typeof params.layout === 'string') return params;
+    return parseGraphSpec(params || {});
+}
+
+/**
+ * Normalises an edge token to a canonical `a-b` pair so that `A-B`, `B-A`
+ * and `A->B` all name the same edge.
+ */
+function normalisePair(token) {
+    const text = String(token || '').replace('->', '-');
+    const dash = text.indexOf('-');
+    if (dash === -1) return text.trim();
+    const a = text.slice(0, dash).trim();
+    const b = text.slice(dash + 1).trim();
+    return a < b ? `${a}-${b}` : `${b}-${a}`;
+}
+
+/**
+ * True when the spec's `highlight=` list names this edge.
+ */
+function isEdgeHighlighted(spec, edge) {
+    const key = normalisePair(`${edge.u}-${edge.v}`);
+    return spec.highlight.some((token) => normalisePair(token) === key);
+}
+
+/**
+ * Shortens a routed polyline at both ends so the wire stops on the node
+ * outline instead of crossing the node.
+ */
+function trimEnds(points, radius) {
+    const out = points.map((p) => ({ x: p.x, y: p.y }));
+    if (out.length < 2) return out;
+
+    const firstDx = out[1].x - out[0].x;
+    const firstDy = out[1].y - out[0].y;
+    const firstLen = Math.hypot(firstDx, firstDy) || 1;
+    out[0] = { x: out[0].x + (firstDx / firstLen) * radius, y: out[0].y + (firstDy / firstLen) * radius };
+
+    const last = out.length - 1;
+    const lastDx = out[last].x - out[last - 1].x;
+    const lastDy = out[last].y - out[last - 1].y;
+    const lastLen = Math.hypot(lastDx, lastDy) || 1;
+    out[last] = { x: out[last].x - (lastDx / lastLen) * radius, y: out[last].y - (lastDy / lastLen) * radius };
+
+    return out;
+}
+
+/**
+ * Estimates the vertical space a graph figure will occupy.
+ *
+ * The estimate is an upper bound of the drawn height by construction: both
+ * are derived from the same layout. A malformed spec returns a fixed height
+ * instead of throwing, because the compositor calls this on every diagram.
+ */
+export function estimateGraphHeight(params, availWidth = 680) {
+    try {
+        const spec = asSpec(params);
+        if (!spec.nodes.length) return 34;
+        const layout = computeGraphLayout(spec, { availWidth });
+        return Math.max(34, layout.height + (spec.caption ? 26 : 0) + 8);
+    } catch {
+        return 60;
+    }
+}
+
+/**
+ * Draws a hand-skinned graph figure and returns the vertical space it used.
+ */
+export function renderGraphDiagram(ctx, rc, params, startX, startY, availWidth, charCounterRef, opts, ink, roughOpts) {
+    const spec = asSpec(params);
+    if (!spec.nodes.length) return 34;
+
+    const layout = computeGraphLayout(spec, { availWidth });
+    const widthScale = (ink && ink.widthScale) || 1.0;
+    const baseStroke = (roughOpts && roughOpts.stroke) || (ink && ink.color) || '#1b3b8c';
+    const accent = (ink && ink.accent) || '#b91c1c';
+    const baseWidth = (roughOpts && roughOpts.strokeWidth) || 1.65;
+
+    // --- edges, drawn first so the nodes sit on top of the wires -----------
+    for (const edge of layout.routedEdges) {
+        const highlighted = isEdgeHighlighted(spec, edge);
+        const stroke = highlighted ? accent : baseStroke;
+        const strokeWidth = baseWidth * (highlighted ? 1.8 : 1.0) * widthScale;
+        const wireOpts = { ...(roughOpts || {}), stroke, strokeWidth };
+
+        if (edge.u === edge.v) {
+            // A self-loop is an arc above the vertex, never a zero-length line.
+            const point = layout.positions[edge.u];
+            const cx = startX + point.x;
+            const cy = startY + point.y;
+            const loop = [
+                [cx - 13, cy - 13],
+                [cx - 13, cy - 39],
+                [cx + 13, cy - 39],
+                [cx + 13, cy - 13]
+            ];
+            rc.curve(loop, wireOpts);
+            if (edge.directed) {
+                drawSharpArrowhead(ctx, rc, loop[3][0], loop[3][1], Math.PI / 2, 8, wireOpts);
+            }
+            continue;
+        }
+
+        const absolute = edge.points.map((p) => ({ x: startX + p.x, y: startY + p.y }));
+        const points = trimEnds(absolute, NODE_R + 2);
+        if (points.length < 2) continue;
+
+        if (points.length === 2) {
+            if (edge.directed) {
+                drawArrowLine(ctx, rc, points[0].x, points[0].y, points[1].x, points[1].y, 9, wireOpts);
+            } else {
+                rc.line(points[0].x, points[0].y, points[1].x, points[1].y, wireOpts);
+            }
+        } else {
+            for (let i = 0; i < points.length - 1; i++) {
+                const a = points[i];
+                const b = points[i + 1];
+                if (a.x === b.x && a.y === b.y) continue;
+                rc.line(a.x, a.y, b.x, b.y, wireOpts);
+            }
+            if (edge.directed) {
+                const from = points[points.length - 2];
+                const to = points[points.length - 1];
+                drawSharpArrowhead(ctx, rc, to.x, to.y, Math.atan2(to.y - from.y, to.x - from.x), 9, wireOpts);
+            }
+        }
+
+        if (edge.label) {
+            const mid = points[Math.floor((points.length - 1) / 2)];
+            drawLabelOrMath(ctx, rc, edge.label, mid.x - edge.label.length * 4, mid.y - 8, 17, charCounterRef, opts);
+        }
+    }
+
+    // --- the vertices ------------------------------------------------------
+    const degreeOf = (id) => layout.routedEdges.filter((e) => e.u === id || e.v === id).length;
+
+    for (const node of spec.nodes) {
+        const point = layout.positions[node.id];
+        if (!point) continue;
+        const x = startX + point.x;
+        const y = startY + point.y;
+        const highlighted = spec.highlightNodes.includes(node.id);
+
+        rc.circle(x, y, highlighted ? NODE_R * 2 + 4 : NODE_R * 2, {
+            ...(roughOpts || {}),
+            stroke: highlighted ? accent : baseStroke,
+            strokeWidth: 1.8 * widthScale,
+            seed: charCounterRef ? charCounterRef.count++ : 1
+        });
+
+        const halfWidth = node.label.length * 5.2;
+        drawLabelOrMath(ctx, rc, node.label, x - halfWidth, y + 6, 19, charCounterRef, opts);
+
+        if (spec.showDegrees) {
+            drawLabelOrMath(ctx, rc, String(degreeOf(node.id)), x + 20, y - 14, 15, charCounterRef, opts);
+        }
+    }
+
+    // --- the caption -------------------------------------------------------
+    if (spec.caption) {
+        const captionOpts = ink
+            ? { ...opts, ink: { ...ink, color: ink.secondary || ink.color } }
+            : opts;
+        const estimated = spec.caption.length * 7;
+        drawLabelOrMath(
+            ctx, rc, spec.caption,
+            startX + Math.max(0, ((availWidth || 680) - estimated) / 2),
+            startY + layout.height + 20, 16, charCounterRef, captionOpts
+        );
+    }
+
+    return layout.height + (spec.caption ? 26 : 0) + 8;
+}
+
+/**
  * Computes vertex positions for a spec.
  *
  * Returns `{ positions, width, height, routedEdges }`. `positions` is a plain
@@ -521,6 +702,10 @@ export function computeGraphLayout(spec, opts = {}) {
     const usable = Math.max(120, availWidth - 2 * NODE_R);
     const adjacency = buildAdjacency(spec);
     let rows = null;
+    // How the wires are routed. It must match how the vertices were placed:
+    // a tree placement draws straight wires, a layered placement draws
+    // orthogonal ones.
+    let routeStyle = 'orthogonal';
 
     if (spec.layout === 'circular') {
         // The circle has to fit inside availWidth x CIRCLE_HEIGHT.
@@ -534,6 +719,7 @@ export function computeGraphLayout(spec, opts = {}) {
                 y: centreY + radius * Math.sin(angle)
             };
         });
+        routeStyle = 'straight';
         separateVertices(positions, ids, MIN_SEPARATION, 'both');
     } else if (spec.layout === 'bipartite') {
         const groups = spec.groups || [ids, []];
@@ -559,6 +745,7 @@ export function computeGraphLayout(spec, opts = {}) {
 
         separateVertices(positions, ids, MIN_SEPARATION, 'x');
     } else if (spec.layout === 'tree') {
+        routeStyle = 'straight';
         placeTree(spec, adjacency, positions, usable);
         separateVertices(positions, ids, MIN_SEPARATION, 'x');
     } else {
@@ -596,6 +783,7 @@ export function computeGraphLayout(spec, opts = {}) {
             // An undirected forest is already a tree, and a tree drawn in
             // levels is exactly a layered graph: the root on top, its
             // children below it.
+            routeStyle = 'straight';
             placeTree(spec, adjacency, positions, usable);
             rows = null;
         }
@@ -687,7 +875,7 @@ export function computeGraphLayout(spec, opts = {}) {
                 { x: midX, y: to.y },
                 { x: to.x, y: to.y }
             ];
-        } else if (spec.layout === 'circular' || spec.layout === 'tree') {
+        } else if (routeStyle === 'straight') {
             points = [{ x: from.x, y: from.y }, { x: to.x, y: to.y }];
         } else {
             const sameRow = Math.abs(from.y - to.y) < 1;

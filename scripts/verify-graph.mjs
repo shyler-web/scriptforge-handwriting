@@ -267,6 +267,69 @@ if (mod && mod.computeGraphLayout) {
     assert(false, 'computeGraphLayout is exported from graph.js');
 }
 
+
+// ---------------------------------------------------------------------------
+// 3. GRAPH RENDERER AND HEIGHT ESTIMATOR
+// ---------------------------------------------------------------------------
+console.log('\n3. Testing Graph Renderer...');
+
+function makeRecordingRC() {
+  const ops = [];
+  const rec = (name) => (...args) => { ops.push({ name, args }); };
+  const rc = { ops };
+  for (const n of ['line','circle','curve','linearPath','rectangle','ellipse','polygon','path','arc','fill','stroke']) rc[n] = rec(n);
+  return rc;
+}
+const ctxStub = globalThis.document.createElement('canvas').getContext('2d');
+const counter = { count: 1 };
+const inkStub = { color: '#1b3b8c', secondary: '#2952b3', accent: '#b91c1c', alpha: 0.94, widthScale: 1.0 };
+const roughStub = { stroke: '#1b3b8c', strokeWidth: 1.65, roughness: 0.55, bowing: 0.6, disableMultiStroke: true, seed: 1 };
+
+const gspec = parseGraphSpec({ nodes: 'A,B,C,D', edges: 'A-B,B-C,C-D,D-A', showDegrees: 'true', caption: 'A cycle' });
+const rc1 = makeRecordingRC();
+const usedH = mod.renderGraphDiagram ? mod.renderGraphDiagram(ctxStub, rc1, gspec, 0, 0, WIDTH, counter, {}, inkStub, roughStub) : 0;
+assert(usedH > 0, `renderGraphDiagram reports a consumed height (${usedH})`);
+
+const circles = rc1.ops.filter(o => o.name === 'circle');
+assert(circles.length >= 4, `four node outlines drawn (${circles.length} circle ops)`);
+
+const lineOrCurve = rc1.ops.filter(o => o.name === 'line' || o.name === 'curve');
+assert(lineOrCurve.length >= 4, `four edges drawn (${lineOrCurve.length} line/curve ops)`);
+
+// The estimate and the drawing must be computed from the SAME spec, otherwise
+// the comparison measures the caption allowance rather than the upper bound.
+const est = mod.estimateGraphHeight ? mod.estimateGraphHeight({ nodes: 'A,B,C,D', edges: 'A-B,B-C,C-D,D-A', showDegrees: 'true', caption: 'A cycle' }, WIDTH) : 0;
+assert(est >= usedH, `height estimate is an upper bound (estimate ${est} >= drawn ${usedH})`);
+
+const estWide = mod.estimateGraphHeight ? mod.estimateGraphHeight({ nodes: 'A,B,C,D,E,F,G,H', edges: 'A-B,B-C,C-D,D-E,E-F,F-G,G-H' }, WIDTH) : 0;
+assert(estWide > 0, 'height estimate is positive for a long chain');
+
+const rc2 = makeRecordingRC();
+const usedEmpty = mod.renderGraphDiagram ? mod.renderGraphDiagram(ctxStub, rc2, parseGraphSpec({ nodes: '' }), 0, 0, WIDTH, counter, {}, inkStub, roughStub) : 0;
+assert(usedEmpty > 0, 'an empty spec still reports a height instead of throwing');
+
+const rc3 = makeRecordingRC();
+if (mod.renderGraphDiagram) mod.renderGraphDiagram(ctxStub, rc3, parseGraphSpec({ nodes: 'A', edges: 'A-A' }), 0, 0, WIDTH, counter, {}, inkStub, roughStub);
+const loopOps = rc3.ops.filter(o => o.name === 'curve' || o.name === 'line');
+assert(loopOps.length >= 1, `a self-loop draws a visible curve rather than a zero-length line (${loopOps.length} ops)`);
+const zeroLength = loopOps.filter(o => o.name === 'line' && o.args[0] === o.args[2] && o.args[1] === o.args[3]);
+assert(zeroLength.length === 0, 'a self-loop draws no zero-length line');
+
+const rc4 = makeRecordingRC();
+if (mod.renderGraphDiagram) mod.renderGraphDiagram(ctxStub, rc4, parseGraphSpec({ nodes: 'A,B', edges: 'A-B,B-A' }), 0, 0, WIDTH, counter, {}, inkStub, roughStub);
+const dupLines = rc4.ops.filter(o => o.name === 'line').length;
+assert(dupLines <= 2, `a duplicate undirected edge is drawn once, not twice (${dupLines} line ops for one edge)`);
+
+// A malformed spec must not throw out of the estimator.
+const estBad = mod.estimateGraphHeight ? mod.estimateGraphHeight({ nodes: null, edges: null }, WIDTH) : 0;
+assert(estBad > 0, `the height estimator survives a malformed spec (${estBad})`);
+
+// A highlighted edge must be drawn differently from the rest.
+const rc5 = makeRecordingRC();
+if (mod.renderGraphDiagram) mod.renderGraphDiagram(ctxStub, rc5, parseGraphSpec({ nodes: 'A,B,C', edges: 'A-B,B-C', highlight: 'A-B' }), 0, 0, WIDTH, counter, {}, inkStub, roughStub);
+const strokes = rc5.ops.filter(o => o.name === 'line').map(o => (o.args[4] || {}).stroke).filter(Boolean);
+assert(strokes.includes(inkStub.accent), `a highlighted edge uses the accent colour (${JSON.stringify(strokes)})`);
+
 console.log('\n====================================================================');
 console.log(` SUMMARY: ${passed} Passed, ${failed} Failed`);
 console.log('====================================================================');
