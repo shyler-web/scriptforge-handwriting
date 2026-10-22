@@ -330,9 +330,21 @@ The spec is a vision document; these are the inputs it implies but does not enum
 
   Do **not** import `glyph.js` directly — `primitives.js` already depends on it, and `verify-waves.mjs` imports `graph.js`, so the import chain must stay DOM-safe at module scope.
 
-- [ ] **Step 4: Route the `graph` type in `src/render/diagrams/index.js`**
+- [ ] **Step 4: Add `diagramStats` to `src/core/state.js`**
 
-  Add to the dispatcher (after the `schematic` branch, before the `canvas2d` branch):
+  Add to the `state` object literal:
+
+  ```js
+  diagramStats: { rendered: 0, failed: 0 },
+  ```
+
+  This must land **before** the dispatcher change in Step 5, because the dispatcher increments the counter unguarded.
+
+- [ ] **Step 5: Route the `graph` type in `src/render/diagrams/index.js`**
+
+  Add the import at the top: `import { renderGraph } from './graph.js';`
+
+  Add to the dispatcher, after the `schematic` branch and before the `canvas2d` branch:
 
   ```js
   } else if (diagType === 'graph' || diagType === 'generalgraph') {
@@ -340,18 +352,19 @@ The spec is a vision document; these are the inputs it implies but does not enum
   }
   ```
 
-  and add the import at the top: `import { renderGraph } from './graph.js';`
+  Also add the **stats counter** in the same file. `stateMod` is already imported as
+  `import * as stateMod from '../../core/state.js';`.
 
-  Also add the **stats counter** in the same file. At the top of `renderHandSketchedDiagram`, before the `try`, do nothing; inside the `try`, after a successful dispatch, increment `stateMod.state.diagramStats.rendered`; inside the existing `catch`, increment `stateMod.state.diagramStats.failed` before the `console.warn`.
-
-  `stateMod` is already imported in that file as `import * as stateMod from '../../core/state.js';` — use `stateMod.state.diagramStats`.
-
-- [ ] **Step 5: Add `diagramStats` to `src/core/state.js`**
-
-  Add to the `state` object literal:
+  Inside the `try` block, immediately after the dispatch chain assigns `usedHeight`, add:
 
   ```js
-  diagramStats: { rendered: 0, failed: 0 },
+  stateMod.state.diagramStats.rendered++;
+  ```
+
+  Inside the existing `catch` block, **before** the `console.warn`, add:
+
+  ```js
+  stateMod.state.diagramStats.failed++;
   ```
 
 - [ ] **Step 6: Reset the counter at the start of each render and use the graph height estimate in `src/render/page.js`**
@@ -492,22 +505,28 @@ The spec is a vision document; these are the inputs it implies but does not enum
 
 - [ ] **Step 3: Implement bullets in `src/render/page.js`**
 
-  In `renderFullPage()`, in the section that handles headings (section C, around line 258), add bullet detection **before** the heading match so a `-` line is never treated as prose:
+  In `renderFullPage()`, insert bullet/callout detection at the **top of section C**, before the `headingMatch` is computed, so a `-` line is never treated as prose and never matched as a heading:
 
   ```js
   const bulletMatch = line.match(/^(\s*)[-*]\s+(.*)$/);
   const calloutMatch = line.match(/^(\s*)>\s+(.*)$/);
   let indentPx = 0;
-  let calloutRule = false;
+  let isBullet = false;
+  let isCallout = false;
   if (calloutMatch) {
       indentPx = 22;
-      calloutRule = true;
+      isCallout = true;
       line = calloutMatch[2];
   } else if (bulletMatch) {
       indentPx = 26;
+      isBullet = true;
       line = bulletMatch[2];
   }
   ```
+
+  A `- ` line must be detected **before** the heading match, but a heading that begins with `>` or `-` in its text (for example `- **not** a heading`) must still be checked for `#` first. The simplest correct order is: run the heading match first, and only when it does **not** match, run the bullet/callout detection. A heading line never reaches the bullet branch, and a bullet line never reaches the heading branch, because a heading must begin with `#` and a bullet must begin with `-`, `*` or `>`.
+
+  So the exact placement is: keep the existing `const headingMatch = line.match(/^(#{1,6})\s+(.*)$/);` as it is; **inside its `else` branch**, insert the bullet/callout detection block above. `indentPx`, `isBullet` and `isCallout` must be declared before the `if (headingMatch)` so the heading branch can also see them (they stay `0`/`false` there).
 
   Apply `indentPx` to the horizontal origin. The origin is computed as:
 
@@ -521,23 +540,38 @@ The spec is a vision document; these are the inputs it implies but does not enum
   let curX = leftMargin + 10 + indentPx + (noise.hash(curLineIdx * 31.7 + opts.handSeed) - 0.3) * 8 * opts.baselineDrift;
   ```
 
-  and change the two wrap resets so the continuation lines keep the same indent:
+  and change the wrap reset so continuation lines keep the same indent:
 
   ```js
   curX = leftMargin + 12 + indentPx + (noise.hash(curLineIdx * 19.3) - 0.5) * 6;
   ```
 
-  When a bullet is present, draw the bullet glyph before the text. After computing the first token's position, draw a small dot with `surface.rc.circle(curX + 2, baselineY - 5, 2.6, { stroke: ink.color, strokeWidth: 1.5, roughness: 0.5, seed: charCounterRef.count++ })` and advance `curX` by 16 before the text is drawn. The `ink` value is already available in this function as `INK_PROFILES[opts.inkKey] || INK_PROFILES.ballpoint_blue`.
-
-  When a callout is present, draw a short vertical accent rule to the left of the text, at `x = leftMargin + 4`, spanning the baseline plus/minus 11 px, in the accent colour `ink.accent`:
+  **Bullet dot.** Draw it before the token loop, using the same `ink` the function already resolves
+  (`const ink = INK_PROFILES[opts.inkKey] || INK_PROFILES.ballpoint_blue;` — add this line if it is
+  not already in scope):
 
   ```js
-  surface.rc.line(leftMargin + 4, baselineY - 11, leftMargin + 4, baselineY + 11, {
-      stroke: ink.accent, strokeWidth: 1.8, roughness: 0.5, seed: charCounterRef.count++
-  });
+  if (isBullet) {
+      const bulletY = getBaselineY(curLineIdx);
+      surface.rc.circle(leftMargin + 4 + indentPx - 8, bulletY - 5, 2.6, {
+          stroke: ink.color, strokeWidth: 1.5, roughness: 0.5, seed: charCounterRef.count++
+      });
+      curX += 16;
+  }
   ```
 
-  `baselineY` is `getBaselineY(curLineIdx)`.
+  **Callout rule.** Draw a short vertical accent rule to the left of the text, at `x = leftMargin + 4`:
+
+  ```js
+  if (isCallout) {
+      const ruleY = getBaselineY(curLineIdx);
+      surface.rc.line(leftMargin + 4, ruleY - 11, leftMargin + 4, ruleY + 11, {
+          stroke: ink.accent, strokeWidth: 1.8, roughness: 0.5, seed: charCounterRef.count++
+      });
+  }
+  ```
+
+  Both blocks go immediately after `curX` is computed and before the `for (let t = 0; ...)` token loop.
 
 - [ ] **Step 4: Run the QA suite and confirm it passes**
 
@@ -835,9 +869,33 @@ The spec is a vision document; these are the inputs it implies but does not enum
   ```
   Expected: PASS — `N/N checks passed`, `CONSOLE_ERRORS []`, `FAILED_REQUESTS []`.
 
-  Note: the chapter files do not exist yet (they are the next plan). `loadChapter` must therefore **not** throw on a 404 — the reader shows the error in `#chapterTitle`. The QA suite's `reader.chapterRenders` check depends on a real chapter, so for this task create a **temporary stub chapter** at `/home//Discrete Mathematics/Notes/00-exam-map-and-priority.md` containing a single heading and one paragraph, and delete it at the end of the task only if the content plan has not yet produced it.
+  Note: the chapter files do not exist yet (they are the next plan). `loadChapter` must therefore **not** throw on a 404 — the reader shows the error in `#chapterTitle`. The QA suite's `reader.chapterRenders` check depends on a real chapter, so this task creates the **first real chapter** at
+  `/home//Discrete Mathematics/Notes/00-exam-map-and-priority.md` with actual content — the
+  exam map: the priority order of the topics, the T9 problem-to-topic mapping, and the time budget.
+  It must be written in ScriptForge DSL, not filler, because the content plan will overwrite it with
+  the full chapter and because a placeholder chapter would make the QA check meaningless.
 
-  Because the stub is a placeholder that the content plan will overwrite, write it with real content — the actual exam-map text — rather than filler.
+  Write it with this shape:
+
+  ```
+  # Exam map & priority order
+  P1 · Difficulty ★ · 10 min · Front matter
+
+  ## Which topic to revise first
+  ...
+  ## How the 20 T9 problems map to the topics
+  [DIAGRAM: grid | cols=T9,Topic,Difficulty | rows=P1~Graph fundamentals~Medium;P13~Trees~Easy;P17~Matching~Medium]
+  ## Time budget
+  ...
+  ```
+
+  The exact content is authored in the next plan; this task only needs enough real content to make
+  the chapter render at least one page with real ink.
+
+  Create the directory first:
+  ```bash
+  mkdir -p "/home//Discrete Mathematics/Notes"
+  ```
 
 - [ ] **Step 8: Confirm the existing gates still pass**
 
