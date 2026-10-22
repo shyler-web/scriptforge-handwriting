@@ -51,6 +51,23 @@ Discrete Mathematics study notebook that can be read on screen and printed as a 
 
 ## 3. Deliverable shape
 
+### 3.0 Governing constraint — everything is created with ScriptForge
+
+All study content is authored in **ScriptForge's own document markup** and rendered by
+**ScriptForge's own engines**:
+
+- Chapter files are ScriptForge DSL (headings, `$…$`, `$$…$$`, `~~strike~~`, `---PAGE---`,
+  `[DIAGRAM: …]`).
+- Every figure is a `[DIAGRAM: …]` block produced by a ScriptForge diagram engine — the new
+  `graph` grammar, or the existing `grid`, `schematic` and `canvas2d` grammars. No hand-written
+  HTML canvas, no pasted raster image. The raw `<svg>` grammar is the only escape hatch, and
+  even then ScriptForge re-inks it rather than pasting it as a static image.
+- The rendered pages come from `src/render/page.js`; the PDF comes from `src/render/pdfExport.js`.
+
+HTML, CSS and JavaScript are used **only** for the reader's shell chrome (navigation, filters,
+export buttons) and are built on the existing `assets/styles/app.css` and
+`assets/styles/tailwind.css`, so the reader is visually indistinguishable from the Studio.
+
 ### 3.1 ScriptForge additions
 
 ```
@@ -161,6 +178,27 @@ sliced across a page break.
 The dispatcher currently swallows per-diagram failures with a `console.warn`. `state.js`
 grows a `diagramStats = { rendered, failed }` counter, incremented by the dispatcher on both
 paths, so the QA harness can assert `failed === 0` across every chapter.
+
+### 4.6 Figure coverage — what each chapter needs
+
+Every figure named here must exist as a `[DIAGRAM: …]` block in the corresponding chapter.
+These are the concrete acceptance list for the `graph` grammar.
+
+| Figure | Chapter | Spec shape |
+|---|---|---|
+| General graph with degree labels | 02 | `nodes=…  edges=…  layout=circular  showDegrees=true` |
+| Bipartite graph, two sides shown | 05 | `nodes=A,B,C\|D,E,F  edges=…  layout=bipartite` |
+| A tree / a spanning tree | 03 | `layout=tree`, the spanning tree marked with `highlight=` |
+| Hasse diagram of a divisibility poset | 09 | `layout=hasse  levels=1:0,2:1,4:2,6:2,3:1,12:3` |
+| Cut vertex and cut edge | 04 | `highlightNodes=c  highlight=ce` |
+| Hamiltonian cycle | 06 | `highlight=` on exactly the cycle edges |
+| Layered directed graph | 03, 04 | `layout=layered  directed=true` |
+| Two vertex-disjoint paths meeting | 03 | `layout=layered  highlight=` on both paths |
+
+Figures that the existing `grid`, `schematic` and `canvas2d` grammars already cover are used as
+they are — for example the truth tables and Karnaugh maps of the induction chapter, the
+state-transition figures of the matching chapter, and the shade-region plots of the safety-net
+chapter. The `graph` grammar is only for what those three cannot express.
 
 ---
 
@@ -340,13 +378,48 @@ Existing open audit findings are treated as inputs to pass 2, not as blockers.
 | Chapter volume (~1 MB of DSL) exceeds one session | Author in priority order so value is delivered incrementally; chapters are independently shippable |
 | A graph layout algorithm produces overlapping nodes | Barycenter sweeps plus a bounding-box overlap check in the engine; QA renders a corpus of the pack's own graphs |
 | Display-math one-line limit truncates long derivations | Break long derivations across aligned display lines, or move them into the reference section |
+| Display math exceeds the ~686 px text column | Keep each display formula short; move a long derivation into prose or a `[DIAGRAM: grid]` block |
 | Merged all-chapters PDF is large (hundreds of pages) | Export is per-chapter by default; merged export is opt-in |
 
 ---
 
-## 12. Out of scope
+## 12. Verification commands
+
+```bash
+node scripts/verify-waves.mjs                                   # existing 35 checks must still pass
+node scripts/qa/harness.mjs scripts/qa/graph.assertions.js       # new: the graph grammar
+node scripts/qa/harness.mjs scripts/qa/notes.assertions.js       # new: the reader + all chapters
+node scripts/build-tailwind.mjs                                 # notes.html is auto-scanned by the walker
+```
+
+`scripts/build-tailwind.mjs` walks the repository root recursively for `.html` and `.js` files,
+so `notes.html` is included in the utility scan with no change to the script. It is re-run
+whenever a new Tailwind utility class is introduced in the reader.
+
+---
+
+## 13. Out of scope
 
 - Rewriting the existing `Lessons/`, `Cheatsheets/` or `notes/` files.
 - Changing the main studio's behaviour beyond the two additive `page.js` features.
 - Audio/lecture transcription — `corpus_text/` already provides the text layer.
 - Any network dependency; everything stays offline.
+- Full-text search across chapter bodies — the reader filters by title, topic and T9 number only.
+
+---
+
+## 14. Definition of done
+
+1. `http://localhost:8000/ScriptForge/notes.html` opens, lists the 11 chapters with priority
+   badges, difficulty stars, minutes and T9 problem numbers, and renders any chapter to
+   hand-written notebook pages.
+2. "Export all chapters" produces one valid multi-page PDF containing every chapter in
+   exam-priority order.
+3. Every figure in every chapter is produced by a ScriptForge diagram engine — no embedded
+   raster images, no hand-plotted canvas.
+4. Every theorem, formula and model solution has been through the independent verification
+   pass; all findings are applied and listed in `Notes/CORRECTIONS.md`.
+5. `node scripts/verify-waves.mjs` and all four QA suites pass, including the two new ones.
+6. The existing Studio app (`index.html`) behaves exactly as before.
+7. The chapter↔T9 mapping in §3.3 matches the T9 problem index in
+   `notes/T9-tutorial-9-model-paper.md` §1, problem for problem.
