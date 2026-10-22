@@ -38,6 +38,7 @@ Reason: the QA harness imports project modules by absolute path (`/src/render/..
 4. Headings are `#` … `######`.
 5. Each `[DIAGRAM: …]` block occupies one source line.
 6. `---PAGE---` forces a page break; pagination is otherwise automatic.
+7. **No `|` inside any `[DIAGRAM: …]` parameter value.** The whole spec is split on `|` by `src/render/diagrams/index.js`, so a pipe inside a value silently truncates it and turns the remainder into a stray parameter. Use `left=` / `right=` for bipartition, and double quotes (`caption="a | b"`) where a literal pipe is genuinely needed — `parseDiagramSpec` is made quote-aware in Task 4.
 7. **No `|` inside any `[DIAGRAM: …]` parameter value.** `src/render/diagrams/index.js` splits the whole spec on `|`, so a pipe inside a value silently truncates that value and starts a new parameter. The engine sanitises `caption=`; every other value must be authored pipe-free.
 
 ### Graph grammar spec (fixed by the design doc)
@@ -48,7 +49,7 @@ Reason: the QA harness imports project modules by absolute path (`/src/render/..
            | directed=false | caption=…]
 ```
 
-`nodes=` accepts `id:label` and a `|` group separator (`nodes=A,B,C|D,E,F`) for bipartite graphs.
+`nodes=` accepts `id:label`. Bipartition uses the separate `left=` / `right=` parameters (`nodes=A,B,C,D,E,F  left=A,B,C  right=D,E,F`) — **never a `|` inside a value**, because the whole diagram spec is split on `|`.
 `edges=` accepts `u-v`, `u->v`, `u-v:label`.
 `levels=` accepts `id:level,…` and forces `layout=hasse`.
 
@@ -63,7 +64,7 @@ Ten input classes the design implies that no happy-path test would catch:
 5. **`nodes=` containing a duplicate id** must keep one node and record a warning, not draw two overlapping circles.
 6. **A self-loop `A-A`** must draw as a visible loop above the vertex, not as a zero-length line that vanishes.
 7. **A single vertex with no edges** must produce one finite position — the circular layout must not divide by zero or emit `NaN`.
-8. **A `caption=` containing a `|`** — `src/render/diagrams/index.js` splits the whole spec on `|`, so the caption truncates and a stray parameter appears. The engine must sanitise the caption, not trust the author.
+8. **A `caption=` containing a `|`** — `src/render/diagrams/index.js` splits the whole spec on `|`, so the caption truncates and the remainder becomes a stray parameter. Fixed at the source: `parseDiagramSpec` becomes quote-aware, so `caption="a | b"` survives; the graph engine additionally sanitises any residual pipe.
 9. **Duplicate undirected edges `A-B,B-A`** must be drawn once, not twice.
 10. **`highlight=` naming an edge that does not exist, and `levels=` naming a vertex that does not exist** must be ignored, not crash the layout.
 
@@ -105,9 +106,10 @@ const s3 = parseGraphSpec({ nodes: 'A,B', edges: 'A->B:0' });
 assert(s3 && s3.edges[0].directed === true, 'directed edge parsed');
 assert(s3 && s3.edges[0].label === '0', 'edge label parsed from u-v:label syntax');
 
-const s4 = parseGraphSpec({ nodes: 'A,B|C,D' });
-assert(s4 && s4.groups && s4.groups.length === 2 && s4.groups[0].join(',') === 'A,B', 'pipe splits nodes into two bipartite groups');
-assert(s4 && s4.layout === 'bipartite', 'pipe in nodes= forces layout=bipartite');
+const s4 = parseGraphSpec({ nodes: 'A,B,C,D,E,F', left: 'A,B,C', right: 'D,E,F' });
+assert(s4 && s4.groups && s4.groups.length === 2 && s4.groups[0].join(',') === 'A,B,C', 'left/right parameters split the nodes into two bipartite groups');
+assert(s4 && s4.groups[1].join(',') === 'D,E,F', 'the second bipartite group is parsed');
+assert(s4 && s4.layout === 'bipartite', 'left/right parameters force layout=bipartite');
 
 const s5 = parseGraphSpec({ nodes: 'A,B', levels: 'A:0,B:1' });
 assert(s5 && s5.layout === 'hasse', 'levels= forces layout=hasse');
@@ -128,6 +130,16 @@ assert(s8 && s8.warnings.length === 1, 'duplicate node id is recorded as a warni
 
 const s9 = parseGraphSpec({ nodes: 'A,B,C', edges: 'A-B,B-C' });
 assert(s9 && s9.layout === 'layered', 'acyclic graph defaults to layout=layered');
+
+const s10 = parseGraphSpec({ nodes: 'A,B', edges: 'A-B,B-A' });
+assert(s10 && s10.edges.length === 1, 'a duplicate undirected edge is kept once');
+
+const s11 = parseGraphSpec({ nodes: 'A,B', edges: 'A-A' });
+assert(s11 && s11.edges.length === 1 && s11.edges[0].u === 'A' && s11.edges[0].v === 'A', 'a self-loop is parsed as an edge');
+
+const s12 = parseGraphSpec({ nodes: 'A,B', highlight: 'A-Z', highlightNodes: 'Q', levels: 'X:0' });
+assert(s12 && s12.highlight.length === 1 && s12.highlightNodes.length === 1, 'unknown highlight entries are parsed without crashing');
+assert(s12 && Object.keys(s12.levels).length === 1, 'levels naming an undeclared vertex are parsed without crashing');
 ```
 
 - [ ] **Step 2: Run the test to verify it fails**
@@ -144,11 +156,12 @@ export function parseGraphSpec(params = {}) { /* returns GraphSpec */ }
 ```
 
 Behaviour the tests pin:
-- `nodes` — split on `,`; trim each entry; split each on the **first** `:` into `{ id, label }`; `label` defaults to `id`. A `|` anywhere in the raw value splits the list into two groups (each side split on `,` as above) and sets `groups`. Duplicate ids keep the first occurrence and push a warning.
-- `edges` — split on `,`; each entry split on the **first** `:` into `pair` and `label`; `pair` split on `->` (directed) or `-` (undirected). Global `directed=true` forces every edge directed. An edge whose endpoint is not a declared node is dropped and pushes a warning.
-- `layout` — explicit `layout=` wins. Otherwise: `levels` present → `hasse`; `groups` present → `bipartite`; the edge set is acyclic → `layered`; otherwise → `circular`.
-- `levels` — split on `,`; each entry `id:level`; `level` parsed with `parseInt`.
-- `highlight` / `highlightNodes` — comma lists, trimmed, empties dropped.
+- `nodes` — split on `,`; trim each entry; split each on the **first** `:` into `{ id, label }`; `label` defaults to `id`. Duplicate ids keep the first occurrence and push a warning.
+- `left` / `right` — each split on `,` into a group; when both are present, `groups` is `[[left…],[right…]]`. **The two sides are separate parameters, never a `|` inside `nodes=`** — the whole diagram spec is split on `|` by `src/render/diagrams/index.js`, so a pipe inside a value would truncate it.
+- `edges` — split on `,`; each entry split on the **first** `:` into `pair` and `label`; `pair` split on `->` (directed) or `-` (undirected). Global `directed=true` forces every edge directed. An edge whose endpoint is not a declared node is dropped and pushes a warning. A duplicate undirected edge (`A-B,B-A`) is kept once.
+- `layout` — explicit `layout=` wins. Otherwise: `levels` present → `hasse`; `left`/`right` present → `bipartite`; the edge set is acyclic → `layered`; otherwise → `circular`.
+- `levels` — split on `,`; each entry `id:level`; `level` parsed with `parseInt`. An id that is not a declared node is kept in the record but ignored by the layout.
+- `highlight` / `highlightNodes` — comma lists, trimmed, empties dropped. Names that do not resolve to a declared node or edge are ignored by the layout.
 - `showDegrees` — `true` when the string is exactly `true` (case-insensitive).
 - `caption` — trimmed string, default `''`.
 - `warnings` — array of human-readable strings, always present.
@@ -230,6 +243,13 @@ assert(sep(l7) >= 30, `no two nodes overlap (min separation ${sep(l7).toFixed(1)
 
 const l8 = computeGraphLayout(parseGraphSpec({ nodes: '' }), { availWidth: WIDTH });
 assert(l8 && Object.keys(l8.positions).length === 0, 'an empty node list yields an empty layout');
+
+const l9 = computeGraphLayout(parseGraphSpec({ nodes: 'A' }), { availWidth: WIDTH });
+const p9 = l9 && l9.positions.A;
+assert(p9 && Number.isFinite(p9.x) && Number.isFinite(p9.y), 'a single vertex gets one finite position (no NaN, no divide-by-zero)');
+
+const l10 = computeGraphLayout(parseGraphSpec({ nodes: 'A,B', highlight: 'A-Z', highlightNodes: 'Q', levels: 'X:0' }), { availWidth: WIDTH });
+assert(l10 && Object.keys(l10.positions).length === 2, 'unknown highlight/levels names are ignored rather than crashing the layout');
 ```
 
 - [ ] **Step 2: Run the test to verify it fails**
@@ -248,10 +268,11 @@ Implementation requirements:
 - Node box is 34 px wide × 34 px tall; the minimum centre-to-centre separation is 30 px.
 - **layered**: compute a layer index per node by longest path over the DAG of undirected edges treated as undirected-for-layering (use BFS from the node with the smallest degree, then refine with a second pass from every node, keeping the maximum depth). Order nodes within a layer by the barycenter of their neighbours' positions from the previous layer, two sweeps. Layer pitch 74 px vertically; nodes in a layer are spread horizontally across `availWidth` with equal gaps.
 - **hasse**: `levels` gives the level per node; `y = (maxLevel - level) * 74 + 17` so level 0 is lowest. Nodes in a level are spread horizontally.
-- **bipartite**: group 0 in the left half, group 1 in the right half; each group is spread vertically, centred against the other.
+- **bipartite**: group 0 (`left`) in the left half, group 1 (`right`) in the right half; each group is spread vertically, centred against the other.
 - **tree**: root = the node with in-degree 0 (or the first node); children are laid out in depth order, parents above children, siblings spread horizontally.
-- **circular**: nodes evenly spaced on a circle whose radius is chosen so the circle fits inside `availWidth × 260`.
+- **circular**: nodes evenly spaced on a circle whose radius is chosen so the circle fits inside `availWidth × 260`. A single node is placed at the circle's centre rather than dividing by zero.
 - After any layout, run a **separation pass**: while any two nodes are closer than 30 px, push them apart along their connecting vector. Cap the pass at 40 iterations so it always terminates.
+- `highlight=` names that do not resolve to an edge, `highlightNodes=` names that are not declared nodes, and `levels=` entries for undeclared nodes are **ignored**, never treated as positions.
 - `width` is the bounding-box width of all positions plus the node radius on each side; `height` is the bounding-box height plus the node radius on each side. If `width` exceeds `availWidth`, scale every x coordinate by `availWidth / width` — but never scale below a 30 px separation, in which case leave the layout at its natural width and report the true `width`.
 
 - [ ] **Step 4: Run the test to verify it passes**
@@ -318,6 +339,18 @@ assert(estWide > 0, 'height estimate is positive for a long chain');
 const rc2 = makeRecordingRC();
 const usedEmpty = mod.renderGraphDiagram(ctxStub, rc2, parseGraphSpec({ nodes: '' }), 0, 0, WIDTH, counter, {}, inkStub, roughStub);
 assert(usedEmpty > 0, 'an empty spec still reports a height instead of throwing');
+
+const rc3 = makeRecordingRC();
+mod.renderGraphDiagram(ctxStub, rc3, parseGraphSpec({ nodes: 'A', edges: 'A-A' }), 0, 0, WIDTH, counter, {}, inkStub, roughStub);
+const loopOps = rc3.ops.filter(o => o.name === 'curve' || o.name === 'line');
+assert(loopOps.length >= 1, `a self-loop draws a visible curve rather than a zero-length line (${loopOps.length} ops)`);
+const zeroLength = loopOps.filter(o => o.name === 'line' && o.args[0] === o.args[2] && o.args[1] === o.args[3]);
+assert(zeroLength.length === 0, 'a self-loop draws no zero-length line');
+
+const rc4 = makeRecordingRC();
+mod.renderGraphDiagram(ctxStub, rc4, parseGraphSpec({ nodes: 'A,B', edges: 'A-B,B-A' }), 0, 0, WIDTH, counter, {}, inkStub, roughStub);
+const dupLines = rc4.ops.filter(o => o.name === 'line').length;
+assert(dupLines <= 2, `a duplicate undirected edge is drawn once, not twice (${dupLines} line ops for one edge)`);
 ```
 
 - [ ] **Step 2: Run the test to verify it fails**
@@ -337,6 +370,7 @@ Rendering rules:
 - **Nodes**: for each node draw a hand-drawn circle of radius 17 centred at `(startX + p.x, startY + p.y)` via `rc.circle(...)`, with `strokeWidth` scaled by `ink.widthScale`. Draw the node label with `drawLabelOrMath(ctx, rc, node.label, x - estimatedHalfWidth, y + 6, 19, charCounterRef, opts)`; estimate the half width as `label.length * 5.2`.
 - When `spec.showDegrees` is true, draw `deg(v)` as a small label at `(x + 20, y - 14)` in font size 15.
 - **Edges**: for each edge, draw a straight `rc.line` from the source circle boundary to the target circle boundary — shorten both ends by the node radius so the line does not cross a node. Use `drawArrowLine` when the edge is directed, `rc.line` otherwise. A highlighted edge uses `strokeWidth * 1.8` and the ink accent colour; a highlighted node's circle uses the accent colour and radius 19.
+- **Self-loop** (`u === v`): draw a small arc above the vertex (`rc.curve` with four points forming a loop, centred at `y - 26`) plus an arrowhead for a directed self-loop. Never draw a zero-length line.
 - **Degree label**: `deg(v)` is the number of edges incident on `v`, counting an edge once even if it is a self-loop.
 - **Caption**: if `spec.caption` is non-empty, draw it centred under the figure with `drawLabelOrMath` at font size 16, in the ink secondary colour.
 - Return the consumed height: `layout.height + (caption ? 26 : 0) + 8`.
@@ -400,6 +434,15 @@ assert(estGraph > 0, `estimateDiagramHeight handles a graph spec (${estGraph})`)
 
 const estOther = pageMod.estimateDiagramHeight('grid | cols=A,B | rows=1~2', 34);
 assert(estOther > 0, `estimateDiagramHeight still handles the grid grammar (${estOther})`);
+
+const q1 = dispMod.parseDiagramSpec('graph | nodes=A,B | caption="left | right"');
+assert(q1.params.caption === 'left | right', `a quoted value protects a literal pipe (caption="${q1.params.caption}")`);
+
+const q2 = dispMod.parseDiagramSpec('graph | nodes=A,B,C,D,E,F | left=A,B,C | right=D,E,F');
+assert(q2.params.left === 'A,B,C' && q2.params.right === 'D,E,F', 'left/right parameters survive the spec split');
+
+const q3 = dispMod.parseDiagramSpec('grid | cols=A,B | rows=1~2~3');
+assert(q3.params.cols === 'A,B' && q3.params.rows === '1~2~3', 'the existing grammars are unaffected by quote-aware splitting');
 ```
 
 - [ ] **Step 2: Run the test to verify it fails**
@@ -416,6 +459,7 @@ diagramStats: { rendered: 0, failed: 0 },
 
 `src/render/diagrams/index.js`:
 - import `renderGraphDiagram` and `estimateGraphHeight` from `./graph.js`.
+- make `parseDiagramSpec` **quote-aware**: split the spec on `|` characters that are **not** inside double quotes, and strip one layer of surrounding double quotes from each value. This is what lets `caption="left | right"` survive. Values without quotes are unchanged, so every existing grammar keeps working exactly as before.
 - In `renderHandSketchedDiagram`, add a branch before the grid branch:
   `else if (diagType === 'graph') { usedHeight = renderGraphDiagram(ctx, rc, params, startX, startY, clampedWidth, counter, opts, ink, roughOpts); }`
 - In the existing `try` block, increment `stateMod.state.diagramStats.rendered` after a successful dispatch; in the existing `catch` block, increment `stateMod.state.diagramStats.failed` before the `console.warn`. Use optional chaining (`stateMod.state?.diagramStats?.rendered`) so the counters never throw.
@@ -929,7 +973,7 @@ try {
     ['graph/highlight','graph | nodes=A,B,C,D | edges=A-B,B-C,C-D,D-A | highlight=A-B,B-C | highlightNodes=B'],
     // --- the figure-coverage acceptance list from spec section 4.6 ---
     ['coverage/degreeLabels', 'graph | nodes=A,B,C,D,E | edges=A-B,B-C,C-D,D-E,E-A | layout=circular | showDegrees=true'],
-    ['coverage/bipartite',    'graph | nodes=A,B,C|D,E,F | edges=A-D,A-E,B-D,B-F,C-E,C-F | layout=bipartite'],
+    ['coverage/bipartite',    'graph | nodes=A,B,C,D,E,F | left=A,B,C | right=D,E,F | edges=A-D,A-E,B-D,B-F,C-E,C-F | layout=bipartite'],
     ['coverage/tree',         'graph | nodes=50,30,70,20,40 | edges=50-30,50-70,30-20,30-40 | layout=tree'],
     ['coverage/spanningTree', 'graph | nodes=A,B,C,D,E | edges=A-B,B-C,C-D,D-E,A-E | highlight=A-B,B-C,C-D'],
     ['coverage/hasse',        'graph | nodes=1,2,3,4,6,12 | edges=1-2,1-3,2-4,2-6,3-6,4-12,6-12 | layout=hasse | levels=1:0,2:1,4:2,6:2,3:1,12:3'],

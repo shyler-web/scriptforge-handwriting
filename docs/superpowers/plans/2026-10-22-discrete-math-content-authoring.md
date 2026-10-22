@@ -35,6 +35,7 @@
 6. `---PAGE---` forces a page break; pagination is otherwise automatic.
 7. Bullets are `- ` at the start of a line; callouts are `> ` at the start of a line.
 8. `~~text~~` renders a scratch-out and is used only for deliberate "common mistake" callouts.
+9. **No `|` inside any `[DIAGRAM: …]` parameter value.** The whole spec is split on `|`; a pipe inside a value truncates it. Use `left=` / `right=` for bipartition, and double quotes (`caption="a | b"`) where a literal pipe is needed.
 
 ### Chapter template (every chapter, in this order)
 
@@ -62,7 +63,7 @@ These figures are an acceptance list, not suggestions. Each named figure must ex
 | Figure | Chapter | Required spec shape |
 |---|---|---|
 | General graph with degree labels | 02 | `layout=circular  showDegrees=true` |
-| Bipartite graph, two sides shown | 05 | `nodes=A,B,C\|D,E,F  layout=bipartite` |
+| Bipartite graph, two sides shown | 05 | `nodes=A,B,C,D,E,F  left=A,B,C  right=D,E,F  layout=bipartite` |
 | A tree, and a spanning tree marked inside a graph | 03 | `layout=tree`; the spanning tree uses `highlight=` |
 | Hasse diagram of a divisibility poset | 09 | `layout=hasse  levels=1:0,2:1,4:2,6:2,3:1,12:3` |
 | Cut vertex and cut edge | 04 | `highlightNodes=c  highlight=ce` |
@@ -330,7 +331,7 @@ Sections 1–6 as in the template. Must include:
 
 Add these `[DIAGRAM: graph]` figures, two of them mandatory:
 
-- **A bipartite graph with the two sides shown** — `nodes=A,B,C|D,E,F  layout=bipartite` (mandatory).
+- **A bipartite graph with the two sides shown** — `nodes=A,B,C,D,E,F  left=A,B,C  right=D,E,F  layout=bipartite` (mandatory).
 - The $k$-regular bipartite graph of T9 Problem 17.
 - A bipartite graph with a matching highlighted (the Hall-check walkthrough).
 

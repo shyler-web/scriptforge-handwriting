@@ -137,7 +137,8 @@ chapter should be written.
 
 | Parameter | Meaning |
 |---|---|
-| `nodes=` | comma list; `id:label` sets a custom label (`A:1,B:2`). A `|` splits the list into the two sides of a bipartite graph (`nodes=A,B,C|D,E,F`) |
+| `nodes=` | comma list of node ids; `id:label` sets a custom label (`A:1,B:2`) |
+| `left=` / `right=` | the two sides of a bipartite graph, as comma lists (`left=A,B,C  right=D,E,F`). **These are separate parameters, not a `|` inside `nodes=`** — see §4.7 |
 | `edges=` | comma list; `u-v` undirected, `u->v` directed, `u-v:label` carries an edge label |
 | `layout=` | `auto` · `layered` · `circular` · `bipartite` · `tree` · `hasse` |
 | `levels=` | `id:level,…` explicit vertical placement; used with `layout=hasse` |
@@ -146,6 +147,20 @@ chapter should be written.
 | `showDegrees=` | `true` writes `deg(v)` beside each node |
 | `directed=` | `true` draws arrowheads |
 | `caption=` | a hand-written caption line beneath the figure |
+
+### 4.7 The `|` rule (binding on every grammar)
+
+`src/render/diagrams/index.js` splits a whole diagram spec on `|`. Therefore:
+
+1. **No parameter value may contain a literal `|`.** A pipe inside a value silently
+   truncates that value and turns the remainder into a stray parameter.
+2. `parseDiagramSpec` is made **quote-aware**: a value may be double-quoted to protect a
+   literal pipe, e.g. `caption="left | right"`. The splitter ignores pipes inside quotes
+   and strips the surrounding quotes from the value.
+3. Bipartition therefore uses the separate `left=` / `right=` parameters rather than a
+   separator inside `nodes=`.
+4. The `caption=` value is additionally sanitised by the graph engine (any residual pipe is
+   replaced), so a malformed spec degrades instead of drawing a stray glyph.
 
 ### 4.2 Layout algorithms
 
@@ -156,8 +171,8 @@ chapter should be written.
 - **bipartite** — two columns, barycenter ordering inside each column.
 - **tree** — hierarchical, root chosen as the in-degree-0 node.
 - **circular** — nodes on a circle, useful for small dense graphs.
-- **auto** — picks `hasse` if `levels=` is present, `bipartite` if `nodes=` contains a `|`
-  group separator, `layered` for acyclic graphs, `circular` otherwise.
+- **auto** — picks `hasse` if `levels=` is present, `bipartite` if `left=`/`right=` are
+  present, `layered` for acyclic graphs, `circular` otherwise.
 
 ### 4.3 Rendering
 
@@ -187,7 +202,7 @@ These are the concrete acceptance list for the `graph` grammar.
 | Figure | Chapter | Spec shape |
 |---|---|---|
 | General graph with degree labels | 02 | `nodes=…  edges=…  layout=circular  showDegrees=true` |
-| Bipartite graph, two sides shown | 05 | `nodes=A,B,C\|D,E,F  edges=…  layout=bipartite` |
+| Bipartite graph, two sides shown | 05 | `nodes=A,B,C,D,E,F  left=A,B,C  right=D,E,F  edges=…  layout=bipartite` |
 | A tree / a spanning tree | 03 | `layout=tree`, the spanning tree marked with `highlight=` |
 | Hasse diagram of a divisibility poset | 09 | `layout=hasse  levels=1:0,2:1,4:2,6:2,3:1,12:3` |
 | Cut vertex and cut edge | 04 | `highlightNodes=c  highlight=ce` |
