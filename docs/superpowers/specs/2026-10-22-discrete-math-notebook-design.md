@@ -248,17 +248,37 @@ for the exam-core section only.
 
 ### 5.4 Serving
 
-The chapters live outside the ScriptForge repo, so `scripts/serve.mjs` gains an optional
-root argument:
+The chapters live outside the ScriptForge repo. `scripts/serve.mjs` gains an optional root
+argument **and** a path mount, so the reader works under either server root:
 
 ```
 node scripts/serve.mjs [port] [root]
 ```
 
-`package.json` gains `"notes": "node scripts/serve.mjs 8000 ../.."`, so the server root
-becomes `/home/`, and the reader is reachable at
-`http://localhost:8000/ScriptForge/notes.html` while fetching chapters from
-`/Discrete Mathematics/Notes/*.md`.
+`notes.config.json` at the repo root declares the mount and where the chapters live:
+
+```json
+{
+  "mount": "/notes",
+  "chaptersDir": "../../Discrete Mathematics/Notes"
+}
+```
+
+The mount is always resolved **relative to the repository root**, never to the server root,
+so it resolves correctly under both roots.
+
+| Server root | Reader URL | Chapter URL |
+|---|---|---|
+| repo root (default, `npm run dev`) | `http://localhost:8000/notes.html` | `http://localhost:8000/notes/03-trees.md` |
+| `/home/` (`npm run notes`) | `http://localhost:8000/ScriptForge/notes.html` | `http://localhost:8000/ScriptForge/notes/03-trees.md` |
+
+`package.json` gains `"notes": "node scripts/serve.mjs 8000 ../.."`.
+
+The browser resolves the config **relative to the page** (`new URL('notes.config.json', document.baseURI)`)
+and the mount **relative to the repository root** (`new URL('.' + cfg.mount + '/' + file, document.baseURI)`),
+so the reader is root-agnostic.
+The default root is preferred because it keeps every project module import at `/src/...`,
+which is the convention every existing QA assertion suite already uses.
 
 ### 5.5 Export
 
@@ -410,9 +430,9 @@ whenever a new Tailwind utility class is introduced in the reader.
 
 ## 14. Definition of done
 
-1. `http://localhost:8000/ScriptForge/notes.html` opens, lists the 11 chapters with priority
-   badges, difficulty stars, minutes and T9 problem numbers, and renders any chapter to
-   hand-written notebook pages.
+1. `http://localhost:8000/notes.html` opens (or `http://localhost:8000/ScriptForge/notes.html`
+   under the alternate server root), lists the 11 chapters with priority badges, difficulty
+   stars, minutes and T9 problem numbers, and renders any chapter to hand-written notebook pages.
 2. "Export all chapters" produces one valid multi-page PDF containing every chapter in
    exam-priority order.
 3. Every figure in every chapter is produced by a ScriptForge diagram engine — no embedded

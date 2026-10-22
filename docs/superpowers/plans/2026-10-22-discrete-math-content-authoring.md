@@ -20,6 +20,8 @@
 - **The DSL constraints below are binding.** A chapter that violates them renders as literal text.
 - **A theorem is stated before it is used**, and every claim carries its attribution (slide number or lecture).
 - **No invented facts.** If the slides do not support a theorem, the chapter says so explicitly (the T9 pack does this repeatedly, e.g. "not in slides") rather than presenting it as course material.
+- **Chapter files are ScriptForge DSL** (headings, `$…$`, `$$…$$`, `~~strike~~`, `---PAGE---`, `[DIAGRAM: …]`).
+- **Every figure is a `[DIAGRAM: …]` block** produced by a ScriptForge diagram engine — the `graph` grammar, or the existing `grid`, `schematic` and `canvas2d` grammars. No hand-written HTML canvas, no pasted raster image, no ASCII art. The raw `<svg>` grammar is the only escape hatch, and even then ScriptForge re-inks it rather than pasting a static image.
 - **Chapter order is exam priority**, not textbook order. `order` in `src/notes/manifest.js` is authoritative.
 - **Every chapter is independently verifiable.** After authoring, the verification pass must be able to re-derive every theorem and every worked solution.
 
@@ -52,6 +54,23 @@ P1 · Difficulty ★★★ · <minutes> min · Lectures <L…> · T9 <P…>
 ```
 
 The exam core is sections 1–6 (8–12 pages). The reference section carries the full substance of the source Lesson, reformatted into the DSL — not a verbatim paste (a verbatim paste cannot render: see the DSL constraints).
+
+### Mandatory figures (spec §4.6)
+
+These figures are an acceptance list, not suggestions. Each named figure must exist as a `[DIAGRAM: …]` block in the stated chapter, in the stated spec shape.
+
+| Figure | Chapter | Required spec shape |
+|---|---|---|
+| General graph with degree labels | 02 | `layout=circular  showDegrees=true` |
+| Bipartite graph, two sides shown | 05 | `nodes=A,B,C\|D,E,F  layout=bipartite` |
+| A tree, and a spanning tree marked inside a graph | 03 | `layout=tree`; the spanning tree uses `highlight=` |
+| Hasse diagram of a divisibility poset | 09 | `layout=hasse  levels=1:0,2:1,4:2,6:2,3:1,12:3` |
+| Cut vertex and cut edge | 04 | `highlightNodes=c  highlight=ce` |
+| Hamiltonian cycle | 06 | `highlight=` on exactly the cycle edges |
+| Layered directed graph | 03, 04 | `layout=layered  directed=true` |
+| Two vertex-disjoint paths meeting | 03 | `layout=layered  highlight=` on both paths |
+
+Figures the existing `grid`, `schematic` and `canvas2d` grammars already cover are used as they are — truth tables and Karnaugh maps in the induction chapter, state-transition figures in the matching chapter, shade-region plots in the safety-net chapter. The `graph` grammar is only for what those three cannot express.
 
 ---
 
@@ -174,7 +193,7 @@ Sections 1–6 as in the template. Must include:
 - T9 Problem 4 (the bipartite degree sequence `3,3,3,3,3,5,6,6,6` — answer **No**) with the full argument that no subset sums to half of 38.
 - T9 Problem 6 (no odd cycle ⇒ at most $\lfloor n^2/4\rfloor$ edges; Mantel's theorem is not on the slides — say so).
 
-Add at least three `[DIAGRAM: graph]` figures: a degree-table graph, a bipartite graph with its 2-colouring, and the graph that kills an impossible degree sequence.
+Add at least three `[DIAGRAM: graph]` figures: **a general graph with degree labels** (mandatory — `layout=circular  showDegrees=true`), a bipartite graph with its 2-colouring, and the graph that kills an impossible degree sequence.
 
 - [ ] **Step 3: Verify the chapter independently**
 
@@ -214,7 +233,14 @@ Sections 1–6 as in the template. Must include:
 - T9 Problem 20 (a tree with a prescribed ordered degree sequence — use the caterpillar construction; Prüfer codes are **not** on the slides, so say so).
 - The rooted-tree terminology list and the full-binary-tree count table.
 
-Add `[DIAGRAM: graph]` figures: a tree with its levels, a path-versus-star contrast for the leaf theorem, and a caterpillar for T9 Problem 20.
+Add these `[DIAGRAM: graph]` figures, all four mandatory:
+
+- **A tree** — `layout=tree` (the rooted-tree terminology figure).
+- **A spanning tree marked inside a graph** — the same graph with the tree edges given in `highlight=` (mandatory).
+- **A layered directed graph** — `layout=layered  directed=true` (mandatory; used for the walk-versus-path direction).
+- **Two vertex-disjoint paths meeting** — `layout=layered  highlight=` on both paths (mandatory; this is the T9 Problem 9 figure).
+
+Also add a path-versus-star contrast for the leaf theorem and a caterpillar for T9 Problem 20.
 
 - [ ] **Step 3: Verify the chapter independently**
 
@@ -257,7 +283,11 @@ Sections 1–6 as in the template. Must include:
 
 **Note the known slide defect:** `Lessons/07` T4 records that the "cut edges $\{ac,bc\}$" label on slide 13 is wrong. The chapter must state the correct cut edges and flag the slide's label as an error.
 
-Add `[DIAGRAM: graph]` figures: the cut-vertex graph, the cut-edge graph, and both slide-18/19 digraphs with the strong/weak colouring.
+Add these `[DIAGRAM: graph]` figures, three of them mandatory:
+
+- **Cut vertex and cut edge in one graph** — `highlightNodes=c  highlight=ce` (mandatory).
+- **A layered directed graph** — `layout=layered  directed=true` (mandatory; the strong/weak connectivity digraph).
+- Both slide-18/19 digraphs with the strong/weak colouring.
 
 - [ ] **Step 3: Verify the chapter independently**
 
@@ -298,7 +328,11 @@ Sections 1–6 as in the template. Must include:
 - T9 Problem 19 (the 2-approximation bound: each edge of $M$ clashes with at most **two** edges of $M'$).
 - T9 Problem 15 (a tree has at most one perfect matching) — Berge's lemma and augmenting paths are **not** covered in L24, so say so.
 
-Add `[DIAGRAM: graph]` figures: a bipartite graph with a matching highlighted, and the $k$-regular bipartite graph of T9 Problem 17.
+Add these `[DIAGRAM: graph]` figures, two of them mandatory:
+
+- **A bipartite graph with the two sides shown** — `nodes=A,B,C|D,E,F  layout=bipartite` (mandatory).
+- The $k$-regular bipartite graph of T9 Problem 17.
+- A bipartite graph with a matching highlighted (the Hall-check walkthrough).
 
 - [ ] **Step 3: Verify the chapter independently**
 
@@ -339,7 +373,11 @@ Sections 1–6 as in the template. Must include:
 - T9 Problem 7 (the false statement) — counterexample $K_{1,3}$, then the corrected theorem: a tree has a Hamiltonian path $\iff$ it is a path graph $\iff$ it has at most two leaves.
 - T9 Problem 10 ($\delta(G)$ gives a path of length $\delta(G)$ and a cycle of length $\ge \delta(G)+1$).
 
-Add `[DIAGRAM: graph]` figures: the $K_{1,3}$ counterexample, a Dirac-satisfying graph, and a non-isomorphic pair with the failing invariant marked.
+Add these `[DIAGRAM: graph]` figures, one of them mandatory:
+
+- **A Hamiltonian cycle highlighted** — `highlight=` on exactly the cycle edges (mandatory).
+- The $K_{1,3}$ counterexample (T9 Problem 7).
+- A Dirac-satisfying graph, and a non-isomorphic pair with the failing invariant marked.
 
 - [ ] **Step 3: Verify the chapter independently**
 
@@ -455,7 +493,7 @@ Sections 1–6 as in the template. Must include:
 - LUB versus GLB, and the eight lattice identities.
 - The non-distributive lattice caveat (T13).
 
-Add `[DIAGRAM: graph]` figures for the divisibility poset on $\{1,2,3,4,5,6\}$ (using `levels=` so it renders as a Hasse diagram) and for the subset lattice on $2^S$.
+Add `[DIAGRAM: graph]` figures for **the Hasse diagram of the divisibility poset** (mandatory — `layout=hasse  levels=1:0,2:1,4:2,6:2,3:1,12:3`), the divisibility poset on $\{1,2,3,4,5,6\}$, and the subset lattice on $2^S$.
 
 - [ ] **Step 3: Verify the chapter independently**
 
@@ -592,3 +630,16 @@ Run before committing any chapter:
 | Every declared node is used | No `nodes=` entry missing from `edges=` or `levels=` unless intentional | reviewed |
 | Chapter renders | Open in `notes.html`, confirm ≥ 1 page and no literal `~`/`;` in grids | confirmed |
 | The chapter is the one the manifest names | File name matches `manifest.js` | matches |
+| Mandatory figures present | Each figure from the spec §4.6 table for this chapter exists in the stated spec shape | all present |
+| ScriptForge-only rule | Grep the chapter for `<canvas`, `<svg`, `<img`, `!\[` | 0 matches |
+
+Full verification set before the final commit:
+
+```bash
+node scripts/verify-waves.mjs                                   # existing 35 checks must still pass
+node scripts/verify-graph.mjs                                   # new: the graph grammar
+node scripts/verify-notes.mjs                                   # new: the chapter manifest
+node scripts/qa/harness.mjs scripts/qa/graph.assertions.js      # new: the graph grammar
+node scripts/qa/harness.mjs scripts/qa/notes.assertions.js      # new: the reader + all chapters
+node scripts/build-tailwind.mjs                                 # notes.html is auto-scanned by the walker
+```
