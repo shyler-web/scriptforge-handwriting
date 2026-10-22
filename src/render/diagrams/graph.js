@@ -11,17 +11,15 @@
  *
  * The spec parser and the layout engine are pure functions over plain data so
  * that they can be unit-tested in plain Node, without a DOM or a canvas.
- * The drawing routine lives further down this file and is added by the wave
- * that needs it.
  */
 
 // Geometry of the figure box, in the local coordinate space where (0,0) is
 // the top-left corner. The renderer translates by (startX, startY).
-const NODE_R = 20;
-const LEVEL_GAP = 92;
-const SIDE_GAP = 220;
-const COL_GAP = 74;
-const MAX_WIDTH = 660;
+const NODE_R = 17;          // a vertex is drawn in a 34 x 34 box
+const LEVEL_GAP = 74;       // vertical pitch between two levels
+const COL_GAP = 74;         // vertical pitch inside a bipartite column
+const MIN_SEPARATION = 30;  // minimum centre-to-centre distance
+const CIRCLE_HEIGHT = 260; // a circular figure is never taller than this
 
 /**
  * Splits a comma-separated parameter value into trimmed, non-empty parts.
@@ -210,23 +208,24 @@ function buildAdjacency(spec) {
 }
 
 /**
- * Places the vertices of one layer along the x axis, centred.
+ * Forward-only adjacency: a directed edge contributes u -> v, an undirected
+ * edge contributes both ways. The longest-path pass walks this list, so a
+ * backward edge can never pull a vertex back down a level.
  */
-function spreadLayer(ids, width) {
-    const positions = new Map();
-    if (!ids.length) return positions;
-    const step = Math.min(110, width / (ids.length + 1));
-    const span = step * (ids.length - 1);
-    const startX = (width - span) / 2;
-    ids.forEach((id, index) => {
-        positions.set(id, { x: startX + index * step, y: 0 });
-    });
-    return positions;
+function buildForwardAdjacency(spec) {
+    const adjacency = new Map(spec.nodes.map((n) => [n.id, []]));
+    for (const edge of spec.edges) {
+        if (edge.u === edge.v) continue;
+        adjacency.get(edge.u).push(edge.v);
+        if (!edge.directed) adjacency.get(edge.v).push(edge.u);
+    }
+    return adjacency;
 }
 
 /**
- * Longest-path layering over a DAG (Kahn's algorithm). Returns null when the
- * edge set contains a cycle, so the caller can fall back to BFS distances.
+ * Longest-path layering over a DAG (Kahn's algorithm): a vertex sits one
+ * level below its deepest predecessor. Returns null when the edge set has a
+ * cycle, because a longest path is then undefined.
  */
 function longestPathLayers(spec, adjacency) {
     const indegree = new Map(spec.nodes.map((n) => [n.id, 0]));
@@ -261,6 +260,34 @@ function longestPathLayers(spec, adjacency) {
 }
 
 /**
+ * BFS distance from every vertex, keeping the maximum distance reached for
+ * each one. This is the layering used when the edge set has a cycle: a second
+ * pass from every node, keeping the maximum depth.
+ */
+function eccentricityLayers(spec, adjacency) {
+    const depth = new Map(spec.nodes.map((n) => [n.id, 0]));
+    for (const root of spec.nodes) {
+        const seen = new Set([root.id]);
+        const queue = [root.id];
+        let distance = 0;
+        while (queue.length) {
+            distance++;
+            const nextQueue = [];
+            for (const id of queue) {
+                for (const neighbour of adjacency.get(id) || []) {
+                    if (seen.has(neighbour)) continue;
+                    seen.add(neighbour);
+                    nextQueue.push(neighbour);
+                    if (distance > depth.get(neighbour)) depth.set(neighbour, distance);
+                }
+            }
+            queue = nextQueue;
+        }
+    }
+    return depth;
+}
+
+/**
  * BFS distance layering from a chosen root.
  */
 function bfsLayers(spec, adjacency, rootId) {
@@ -276,7 +303,6 @@ function bfsLayers(spec, adjacency, rootId) {
             }
         }
     }
-    // Vertices unreachable from the root are parked on the last layer.
     const maxLayer = Math.max(0, ...layer.values());
     for (const node of spec.nodes) {
         if (!layer.has(node.id)) layer.set(node.id, maxLayer + 1);
@@ -286,7 +312,7 @@ function bfsLayers(spec, adjacency, rootId) {
 
 /**
  * Orders the vertices inside each layer to reduce edge crossings, using the
- * barycentre heuristic. Two sweeps (down then up) is enough for the figures
+ * barycentre heuristic. Two sweeps - down then up - is enough for the figures
  * the notebook needs.
  */
 function orderLayersByBarycentre(layers, adjacency) {
@@ -307,9 +333,9 @@ function orderLayersByBarycentre(layers, adjacency) {
 
         for (const layerIndex of indices) {
             const neighbourLayer = down ? layerIndex - 1 : layerIndex + 1;
+            const neighboursIn = new Set(layers[neighbourLayer] || []);
             const scored = layers[layerIndex].map((id) => {
-                const neighbours = (adjacency.get(id) || []).filter((n) =>
-                    layers[neighbourLayer] && layers[neighbourLayer].includes(n));
+                const neighbours = (adjacency.get(id) || []).filter((n) => neighboursIn.has(n));
                 const barycentre = neighbours.length
                     ? neighbours.reduce((sum, n) => sum + positionOf.get(n), 0) / neighbours.length
                     : positionOf.get(id);
@@ -324,130 +350,326 @@ function orderLayersByBarycentre(layers, adjacency) {
 }
 
 /**
+ * The vertex a tree is drawn from: the one with no incoming directed edge,
+ * falling back to the first declared vertex.
+ */
+function pickTreeRoot(spec) {
+    const hasParent = new Set();
+    for (const edge of spec.edges) {
+        if (!edge.directed) continue;
+        hasParent.add(edge.v);
+    }
+    for (const node of spec.nodes) {
+        if (!hasParent.has(node.id)) return node.id;
+    }
+    return spec.nodes[0].id;
+}
+
+/**
+ * The vertex a layered graph is measured from when it has no natural source:
+ * the one with the smallest degree, ties broken by declaration order.
+ */
+function pickSmallestDegreeRoot(spec, adjacency) {
+    let best = spec.nodes[0].id;
+    let bestDegree = Infinity;
+    for (const node of spec.nodes) {
+        const degree = (adjacency.get(node.id) || []).length;
+        if (degree < bestDegree) {
+            bestDegree = degree;
+            best = node.id;
+        }
+    }
+    return best;
+}
+
+/**
+ * Places a tree with the root at the top, children in depth order, parents
+ * above children, and siblings spread horizontally.
+ */
+function placeTree(spec, adjacency, positions, usable) {
+    const rootId = pickTreeRoot(spec);
+    const children = new Map(spec.nodes.map((n) => [n.id, []]));
+    const hasParent = new Set();
+    for (const edge of spec.edges) {
+        if (edge.u === edge.v) continue;
+        children.get(edge.u).push(edge.v);
+        hasParent.add(edge.v);
+    }
+
+    const depth = new Map();
+    const order = [];
+    const stack = [rootId];
+    depth.set(rootId, 0);
+    while (stack.length) {
+        const id = stack.pop();
+        order.push(id);
+        for (const child of children.get(id) || []) {
+            if (depth.has(child)) continue;
+            depth.set(child, depth.get(id) + 1);
+            stack.push(child);
+        }
+    }
+    for (const node of spec.nodes) {
+        if (!depth.has(node.id)) {
+            depth.set(node.id, 0);
+            order.push(node.id);
+        }
+    }
+
+    // Leaves take the next free x slot; an internal node sits at the average
+    // of its children, so a subtree stays centred under its parent.
+    const leafOrder = [];
+    const collectLeaves = (id, seen) => {
+        if (seen.has(id)) return;
+        seen.add(id);
+        const kids = (children.get(id) || []).filter((c) => depth.has(c));
+        if (!kids.length) {
+            leafOrder.push(id);
+            return;
+        }
+        kids.forEach((kid) => collectLeaves(kid, seen));
+    };
+    const seen = new Set();
+    collectLeaves(rootId, seen);
+    for (const node of spec.nodes) {
+        if (!seen.has(node.id)) collectLeaves(node.id, seen);
+    }
+
+    const step = Math.min(120, usable / Math.max(1, leafOrder.length + 1));
+    const xOf = new Map();
+    leafOrder.forEach((id, index) => xOf.set(id, (index + 1) * step));
+
+    const placeUp = (id) => {
+        const kids = (children.get(id) || []).filter((c) => depth.has(c));
+        if (!kids.length) return xOf.get(id);
+        const xs = kids.map(placeUp).filter((v) => Number.isFinite(v));
+        const x = xs.reduce((a, b) => a + b, 0) / xs.length;
+        xOf.set(id, x);
+        return x;
+    };
+    placeUp(rootId);
+
+    for (const node of spec.nodes) {
+        positions[node.id] = {
+            x: xOf.get(node.id) ?? NODE_R,
+            y: (depth.get(node.id) || 0) * LEVEL_GAP + NODE_R
+        };
+    }
+}
+
+/**
+ * Pushes any two vertices that are closer than `minDist` apart, so no two
+ * circles overlap. The pass is capped so it always terminates.
+ *
+ * `axis` is 'x' for the row-based layouts: a vertex must keep its row, so
+ * only its horizontal position may move. For a circular layout the vertices
+ * are pushed apart in any direction.
+ */
+function separateVertices(positions, ids, minDist, axis) {
+    for (let iteration = 0; iteration < 40; iteration++) {
+        let moved = false;
+        for (let i = 0; i < ids.length; i++) {
+            for (let j = i + 1; j < ids.length; j++) {
+                const a = positions[ids[i]];
+                const b = positions[ids[j]];
+                if (!a || !b) continue;
+                let dx = b.x - a.x;
+                let dy = b.y - a.y;
+                let distance = Math.hypot(dx, dy);
+                if (distance >= minDist) continue;
+                if (axis === 'x') {
+                    const gap = minDist - Math.abs(dx);
+                    const direction = dx === 0 ? (i < j ? 1 : -1) : Math.sign(dx);
+                    a.x -= direction * gap * 0.5;
+                    b.x += direction * gap * 0.5;
+                } else {
+                    if (distance === 0) {
+                        dx = 0.001;
+                        dy = 0.001;
+                        distance = Math.hypot(dx, dy);
+                    }
+                    const push = (minDist - distance) * 0.5 + 0.01;
+                    a.x -= (dx / distance) * push;
+                    a.y -= (dy / distance) * push;
+                    b.x += (dx / distance) * push;
+                    b.y += (dy / distance) * push;
+                }
+                moved = true;
+            }
+        }
+        if (!moved) break;
+    }
+}
+
+/**
  * Computes vertex positions for a spec.
  *
- * Returns `{ positions, width, height, routedEdges }` where `positions` is a
- * Map of id -> {x, y} in a local box whose top-left corner is (0,0).
+ * Returns `{ positions, width, height, routedEdges }`. `positions` is a plain
+ * object of id -> {x, y} in a local box whose top-left corner is (0,0); the
+ * renderer offsets them by (startX, startY).
  */
-export function computeLayout(spec, availWidth = 640) {
-    const positions = new Map();
+export function computeGraphLayout(spec, opts = {}) {
+    const availWidth = Number.isFinite(opts.availWidth) ? opts.availWidth : 680;
+    const positions = {};
     const routedEdges = [];
-    const width = Math.max(200, Math.min(availWidth || 640, MAX_WIDTH));
 
     if (!spec || !spec.nodes.length) {
         return { positions, width: 0, height: 0, routedEdges };
     }
 
-    const adjacency = buildAdjacency(spec);
     const ids = spec.nodes.map((n) => n.id);
+    const usable = Math.max(120, availWidth - 2 * NODE_R);
+    const adjacency = buildAdjacency(spec);
+    let rows = null;
 
-    // --- group the vertices into layers -----------------------------------
-    let layers = [];
-
-    if (spec.layout === 'hasse') {
-        const maxLevel = Math.max(0, ...ids.map((id) => (spec.levels[id] ?? 0)));
-        const byLevel = new Map();
-        for (const id of ids) {
-            const level = spec.levels[id] ?? 0;
-            if (!byLevel.has(level)) byLevel.set(level, []);
-            byLevel.get(level).push(id);
-        }
-        // Layers are built in ascending level order (level 0 first). The
-        // placement below then pushes level 0 to the bottom of the box and
-        // the highest level to the top, which is the Hasse convention.
-        for (let level = 0; level <= maxLevel; level++) {
-            layers.push(byLevel.get(level) || []);
-        }
-    } else if (spec.layout === 'bipartite') {
-        const groups = spec.groups || [ids];
-        const left = groups[0] || [];
-        const right = groups[1] || [];
-        layers = [left, right];
-    } else if (spec.layout === 'tree') {
-        const depth = bfsLayers(spec, adjacency, pickTreeRoot(spec, adjacency));
-        const byDepth = new Map();
-        for (const id of ids) {
-            const d = depth.get(id) || 0;
-            if (!byDepth.has(d)) byDepth.set(d, []);
-            byDepth.get(d).push(id);
-        }
-        for (let d = 0; d <= Math.max(0, ...byDepth.keys()); d++) layers.push(byDepth.get(d) || []);
-    } else if (spec.layout === 'circular') {
-        layers = [ids];
-    } else {
-        // layered
-        const layered = longestPathLayers(spec, adjacency);
-        const depth = layered || bfsLayers(spec, adjacency, pickRoot(spec, adjacency));
-        const byDepth = new Map();
-        for (const id of ids) {
-            const d = depth.get(id) || 0;
-            if (!byDepth.has(d)) byDepth.set(d, []);
-            byDepth.get(d).push(id);
-        }
-        for (let d = 0; d <= Math.max(0, ...byDepth.keys()); d++) layers.push(byDepth.get(d) || []);
-        layers = orderLayersByBarycentre(layers, adjacency);
-    }
-
-    // --- place the vertices ------------------------------------------------
     if (spec.layout === 'circular') {
-        const radius = Math.max(70, ids.length * 26);
-        const cx = width / 2;
-        const cy = radius + NODE_R + 8;
+        // The circle has to fit inside availWidth x CIRCLE_HEIGHT.
+        const radius = Math.max(NODE_R, Math.min(usable / 2, CIRCLE_HEIGHT / 2 - NODE_R));
+        const centreX = usable / 2;
+        const centreY = radius + NODE_R;
         ids.forEach((id, index) => {
             const angle = (2 * Math.PI * index) / ids.length - Math.PI / 2;
-            positions.set(id, { x: cx + radius * Math.cos(angle), y: cy + radius * Math.sin(angle) });
+            positions[id] = {
+                x: centreX + radius * Math.cos(angle),
+                y: centreY + radius * Math.sin(angle)
+            };
         });
+        separateVertices(positions, ids, MIN_SEPARATION, 'both');
     } else if (spec.layout === 'bipartite') {
-        const left = layers[0] || [];
-        const right = layers[1] || [];
-        const leftIndex = new Map(left.map((id, i) => [id, i]));
-        const rightIndex = new Map(right.map((id, i) => [id, i]));
+        const groups = spec.groups || [ids, []];
+        const left = groups[0] || [];
+        const right = groups[1] || [];
+        const leftX = usable * 0.25;
+        const rightX = usable * 0.75;
 
-        const columnY = (idsInColumn, otherIndex) => {
-            const total = (idsInColumn.length - 1) * COL_GAP;
+        const column = (members, x) => {
+            const total = Math.max(0, members.length - 1) * COL_GAP;
             const top = NODE_R + 12;
-            idsInColumn.forEach((id, index) => {
-                const neighbours = (adjacency.get(id) || []).filter((n) => otherIndex.has(n));
-                const barycentre = neighbours.length
-                    ? neighbours.reduce((sum, n) => sum + otherIndex.get(n), 0) / neighbours.length
-                    : index;
-                positions.set(id, { x: 0, y: top + index * COL_GAP, _bary: barycentre });
-            });
-            // Re-sort the column by barycentre, then re-assign the y values.
-            const sorted = [...idsInColumn].sort((a, b) => positions.get(a)._bary - positions.get(b)._bary);
-            sorted.forEach((id, index) => {
-                const point = positions.get(id);
-                point.y = top + index * COL_GAP;
-                delete point._bary;
+            members.forEach((id, index) => {
+                positions[id] = { x, y: top + index * COL_GAP };
             });
             return total;
         };
-        columnY(left, rightIndex);
-        columnY(right, leftIndex);
-        for (const id of ids) {
-            const point = positions.get(id);
-            point.x = id && rightIndex.has(id) ? SIDE_GAP : 0;
-        }
+        const leftSpan = column(left, leftX);
+        const rightSpan = column(right, rightX);
+        // Both columns are centred against each other.
+        const shift = (rightSpan - leftSpan) / 2;
+        for (const id of left) positions[id].y += shift;
+        for (const id of right) positions[id].y -= shift;
+
+        separateVertices(positions, ids, MIN_SEPARATION, 'x');
     } else if (spec.layout === 'tree') {
-        placeTree(spec, adjacency, positions, width);
+        placeTree(spec, adjacency, positions, usable);
+        separateVertices(positions, ids, MIN_SEPARATION, 'x');
     } else {
-        // layered and hasse both stack their layers vertically.
-        const levelCount = layers.length;
-        layers.forEach((layerIds, depth) => {
-            const spread = spreadLayer(layerIds, width);
-            for (const [id, point] of spread) {
-                const y = spec.layout === 'hasse'
-                    ? (levelCount - 1 - depth) * LEVEL_GAP + NODE_R
-                    : depth * LEVEL_GAP + NODE_R;
-                positions.set(id, { x: point.x, y });
+        // layered and hasse both stack rows vertically.
+        const allDirected = spec.edges.length > 0 && spec.edges.every((e) => e.directed);
+
+        if (spec.layout === 'hasse') {
+            const levelOf = (id) => (Object.prototype.hasOwnProperty.call(spec.levels, id) ? spec.levels[id] : 0);
+            const maxLevel = Math.max(0, ...ids.map(levelOf));
+            const byLevel = new Map();
+            for (const id of ids) {
+                const level = levelOf(id);
+                if (!byLevel.has(level)) byLevel.set(level, []);
+                byLevel.get(level).push(id);
             }
-        });
+            rows = [];
+            for (let level = 0; level <= maxLevel; level++) rows.push(byLevel.get(level) || []);
+        } else if (allDirected) {
+            // A digraph is layered by longest path: a vertex sits one row
+            // below its deepest predecessor.
+            const forward = buildForwardAdjacency(spec);
+            const depth = longestPathLayers(spec, forward)
+                || eccentricityLayers(spec, adjacency)
+                || bfsLayers(spec, adjacency, pickSmallestDegreeRoot(spec, adjacency));
+            const byDepth = new Map();
+            for (const id of ids) {
+                const d = depth.get(id) || 0;
+                if (!byDepth.has(d)) byDepth.set(d, []);
+                byDepth.get(d).push(id);
+            }
+            rows = [];
+            for (let d = 0; d <= Math.max(0, ...byDepth.keys()); d++) rows.push(byDepth.get(d) || []);
+            rows = orderLayersByBarycentre(rows, adjacency);
+        } else {
+            // An undirected forest is already a tree, and a tree drawn in
+            // levels is exactly a layered graph: the root on top, its
+            // children below it.
+            placeTree(spec, adjacency, positions, usable);
+            rows = null;
+        }
+
+        if (rows) {
+            const rowCount = rows.length;
+            rows.forEach((rowIds, index) => {
+                const step = rowIds.length ? Math.min(110, usable / rowIds.length) : 0;
+                const span = step * Math.max(0, rowIds.length - 1);
+                const startX = (usable - span) / 2;
+                rowIds.forEach((id, column) => {
+                    const y = spec.layout === 'hasse'
+                        ? (rowCount - 1 - index) * LEVEL_GAP + NODE_R
+                        : index * LEVEL_GAP + NODE_R;
+                    positions[id] = { x: startX + column * step, y };
+                });
+            });
+        }
+
+        separateVertices(positions, ids, MIN_SEPARATION, 'x');
+    }
+
+    // --- the bounding box --------------------------------------------------
+    let minX = Infinity;
+    let maxX = -Infinity;
+    let minY = Infinity;
+    let maxY = -Infinity;
+    for (const id of ids) {
+        const point = positions[id];
+        if (!point) continue;
+        minX = Math.min(minX, point.x);
+        maxX = Math.max(maxX, point.x);
+        minY = Math.min(minY, point.y);
+        maxY = Math.max(maxY, point.y);
+    }
+    if (!Number.isFinite(minX)) {
+        minX = 0;
+        maxX = 0;
+        minY = 0;
+        maxY = 0;
+    }
+
+    let width = (maxX - minX) + 2 * NODE_R;
+    let height = (maxY - minY) + 2 * NODE_R;
+
+    // Shift the figure so its top-left corner is the origin.
+    for (const id of ids) {
+        const point = positions[id];
+        if (!point) continue;
+        point.x -= minX - NODE_R;
+        point.y -= minY - NODE_R;
+    }
+
+    // A figure wider than the column is scaled down, unless that would push
+    // two vertices closer together than the minimum separation.
+    if (width > availWidth && ids.length > 1) {
+        const scale = availWidth / width;
+        const scaled = ids.map((id) => ({ id, x: positions[id].x * scale, y: positions[id].y }));
+        let minGap = Infinity;
+        for (let i = 0; i < scaled.length; i++) {
+            for (let j = i + 1; j < scaled.length; j++) {
+                minGap = Math.min(minGap, Math.hypot(scaled[i].x - scaled[j].x, scaled[i].y - scaled[j].y));
+            }
+        }
+        if (minGap >= MIN_SEPARATION) {
+            for (const point of scaled) positions[point.id].x = point.x;
+            width = availWidth;
+        }
     }
 
     // --- route the edges ---------------------------------------------------
     for (const edge of spec.edges) {
-        const from = positions.get(edge.u);
-        const to = positions.get(edge.v);
+        const from = positions[edge.u];
+        const to = positions[edge.v];
         if (!from || !to) continue;
 
         let points;
@@ -468,8 +690,8 @@ export function computeLayout(spec, availWidth = 640) {
         } else if (spec.layout === 'circular' || spec.layout === 'tree') {
             points = [{ x: from.x, y: from.y }, { x: to.x, y: to.y }];
         } else {
-            const sameLayer = Math.abs(from.y - to.y) < 1;
-            if (sameLayer) {
+            const sameRow = Math.abs(from.y - to.y) < 1;
+            if (sameRow) {
                 points = [{ x: from.x, y: from.y }, { x: to.x, y: to.y }];
             } else {
                 const midY = (from.y + to.y) / 2;
@@ -484,137 +706,5 @@ export function computeLayout(spec, availWidth = 640) {
         routedEdges.push({ ...edge, points });
     }
 
-    // --- the bounding box --------------------------------------------------
-    let minY = Infinity;
-    let maxY = -Infinity;
-    let minX = Infinity;
-    let maxX = -Infinity;
-    for (const point of positions.values()) {
-        minY = Math.min(minY, point.y);
-        maxY = Math.max(maxY, point.y);
-        minX = Math.min(minX, point.x);
-        maxX = Math.max(maxX, point.x);
-    }
-    if (!Number.isFinite(minY)) {
-        minY = 0;
-        maxY = 0;
-    }
-
-    const height = (maxY - minY) + 2 * NODE_R + 20;
-    const boxWidth = Math.max(width, (maxX - minX) + 2 * NODE_R + 20);
-
-    return { positions, width: boxWidth, height, routedEdges };
-}
-
-/**
- * The vertex a tree is drawn from: the one with no incoming edge, falling
- * back to the first declared vertex.
- */
-function pickTreeRoot(spec, adjacency) {
-    const hasParent = new Set();
-    for (const edge of spec.edges) {
-        if (!edge.directed) continue;
-        hasParent.add(edge.v);
-    }
-    for (const node of spec.nodes) {
-        if (!hasParent.has(node.id)) return node.id;
-    }
-    return spec.nodes[0].id;
-}
-
-/**
- * The vertex a layered graph is drawn from: the highest-degree one, with ties
- * broken by declaration order.
- */
-function pickRoot(spec, adjacency) {
-    let best = spec.nodes[0].id;
-    let bestDegree = -1;
-    for (const node of spec.nodes) {
-        const degree = (adjacency.get(node.id) || []).length;
-        if (degree > bestDegree) {
-            bestDegree = degree;
-            best = node.id;
-        }
-    }
-    return best;
-}
-
-/**
- * Places a tree with the root at the top, children spread evenly under
- * their parent, and the subtree of each child centred on it.
- */
-function placeTree(spec, adjacency, positions, width) {
-    const rootId = pickTreeRoot(spec, adjacency);
-    const children = new Map(spec.nodes.map((n) => [n.id, []]));
-    const hasParent = new Set();
-    for (const edge of spec.edges) {
-        if (edge.u === edge.v) continue;
-        children.get(edge.u).push(edge.v);
-        hasParent.add(edge.v);
-    }
-
-    const root = spec.nodes.find((n) => !hasParent.has(n.id));
-    const actualRoot = root ? root.id : rootId;
-
-    const depth = new Map();
-    const parent = new Map();
-    const order = [];
-    const stack = [actualRoot];
-    depth.set(actualRoot, 0);
-    while (stack.length) {
-        const id = stack.pop();
-        order.push(id);
-        for (const child of children.get(id) || []) {
-            if (depth.has(child)) continue;
-            depth.set(child, depth.get(id) + 1);
-            parent.set(child, id);
-            stack.push(child);
-        }
-    }
-    for (const node of spec.nodes) {
-        if (!depth.has(node.id)) {
-            depth.set(node.id, 0);
-            parent.set(node.id, actualRoot);
-            order.push(node.id);
-        }
-    }
-
-    // Leaves take the next free x slot in order; internal nodes sit at the
-    // average of their children.
-    const leafSlots = [];
-    const leafOrder = [];
-    const collectLeaves = (id) => {
-        const kids = (children.get(id) || []).filter((c) => depth.has(c));
-        if (!kids.length) {
-            leafSlots.push(0);
-            leafOrder.push(id);
-            return;
-        }
-        kids.forEach(collectLeaves);
-    };
-    collectLeaves(actualRoot);
-    for (const node of spec.nodes) {
-        if (!leafOrder.includes(node.id)) collectLeaves(node.id);
-    }
-
-    const step = Math.min(120, width / Math.max(1, leafSlots.length + 1));
-    const xOf = new Map();
-    leafOrder.forEach((id, index) => xOf.set(id, (index + 1) * step));
-
-    const placeUp = (id) => {
-        const kids = (children.get(id) || []).filter((c) => depth.has(c));
-        if (!kids.length) return xOf.get(id);
-        const xs = kids.map(placeUp).filter((v) => Number.isFinite(v));
-        const x = xs.reduce((a, b) => a + b, 0) / xs.length;
-        xOf.set(id, x);
-        return x;
-    };
-    placeUp(actualRoot);
-
-    for (const node of spec.nodes) {
-        positions.set(node.id, {
-            x: xOf.get(node.id) ?? NODE_R,
-            y: (depth.get(node.id) || 0) * LEVEL_GAP + NODE_R
-        });
-    }
+    return { positions, width, height, routedEdges };
 }

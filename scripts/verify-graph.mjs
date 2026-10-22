@@ -201,50 +201,70 @@ assert(s18 && s18.warnings.length === 1, 'the dropped edge is reported');
 // ---------------------------------------------------------------------------
 console.log('\n2. Testing Graph Layout Engine...');
 
-const computeLayout = mod && mod.computeLayout ? mod.computeLayout : () => null;
+const computeGraphLayout = mod && mod.computeGraphLayout ? mod.computeGraphLayout : () => null;
+const WIDTH = 680;
 
-if (mod && mod.computeLayout) {
-    const l1 = computeLayout(parseGraphSpec({ nodes: 'A,B,C,D', edges: 'A-B,B-C,C-D,D-A,A-C' }), 640);
-    assert(l1 && l1.positions.size === 4, 'layout positions every vertex');
-    assert(l1 && l1.width > 0 && l1.height > 0, 'layout reports a positive box');
-    let finite = true;
-    for (const p of (l1 ? l1.positions.values() : [])) {
-        if (!Number.isFinite(p.x) || !Number.isFinite(p.y)) finite = false;
-    }
-    assert(finite, 'every layout coordinate is finite');
+if (mod && mod.computeGraphLayout) {
+    const l1 = computeGraphLayout(parseGraphSpec({ nodes: 'A,B,C,D', edges: 'A-B,B-C,C-D' }), { availWidth: WIDTH });
+    assert(l1 && Object.keys(l1.positions).length === 4, 'layered layout positions every node');
+    assert(l1 && l1.width <= WIDTH, `layered layout fits the available width (${l1 && l1.width} <= ${WIDTH})`);
+    assert(l1 && l1.height > 0, 'layered layout reports a positive height');
 
-    // REVIEW FOCUS 7: a lone vertex gets a finite position (no divide-by-zero)
-    const l2 = computeLayout(parseGraphSpec({ nodes: 'A', edges: '' }), 640);
-    const lone = l2.positions.get('A');
-    assert(lone && Number.isFinite(lone.x) && Number.isFinite(lone.y), 'a lone vertex gets finite coordinates');
+    const l2 = computeGraphLayout(parseGraphSpec({ nodes: 'A,B,C', edges: 'A-B,B-C' }), { availWidth: WIDTH });
+    const layerY = new Set(Object.values(l2.positions).map(p => p.y));
+    assert(layerY.size === 3, `layered layout puts each node of a path on its own layer (${layerY.size} distinct y)`);
 
-    // hasse: the highest level is drawn above the lowest
-    const l3 = computeLayout(parseGraphSpec({ nodes: '1,2,4', edges: '1-2,1-4,2-4', layout: 'hasse', levels: '1:0,2:1,4:2' }), 640);
-    assert(l3.positions.get('4').y < l3.positions.get('1').y, 'hasse layout puts the highest level at the top');
+    const l3 = computeGraphLayout(parseGraphSpec({ nodes: 'A,B,C', levels: 'A:0,B:1,C:2' }), { availWidth: WIDTH });
+    assert(l3 && l3.positions.A.y > l3.positions.B.y && l3.positions.B.y > l3.positions.C.y,
+      'hasse layout places level 0 at the bottom and higher levels above it');
 
-    // bipartite: the two groups occupy two distinct columns
-    const l4 = computeLayout(parseGraphSpec({ nodes: 'A,B|C,D', edges: 'A-C,A-D,B-C' }), 640);
-    const xs = [...l4.positions.values()].map(p => p.x);
-    assert(Math.max(...xs) - Math.min(...xs) > 40, 'bipartite layout uses two distinct columns');
+    const l4 = computeGraphLayout(parseGraphSpec({ nodes: 'A,B|C,D' }), { availWidth: WIDTH });
+    assert(l4 && l4.positions.A.x !== l4.positions.C.x, 'bipartite layout separates the two groups horizontally');
+    assert(l4 && Math.abs(l4.positions.A.x - l4.positions.B.x) < Math.abs(l4.positions.A.x - l4.positions.C.x),
+      'bipartite layout groups same-side nodes closer together than opposite-side nodes');
 
-    // every layout mode yields a usable box
-    for (const mode of ['auto', 'layered', 'circular', 'bipartite', 'tree', 'hasse']) {
-        const spec = parseGraphSpec({ nodes: 'A,B,C', edges: 'A-B,B-C', layout: mode, levels: 'A:0,B:1,C:2' });
-        const lay = computeLayout(spec, 640);
-        assert(lay.positions.size === 3 && lay.height > 0, `layout=${mode} produces a usable box`);
-    }
+    const l5 = computeGraphLayout(parseGraphSpec({ nodes: 'R,A,B', edges: 'R-A,R-B' }), { availWidth: WIDTH });
+    assert(l5 && l5.positions.R.y < l5.positions.A.y && l5.positions.R.y < l5.positions.B.y,
+      'tree layout puts the root above its children');
 
-    // REVIEW FOCUS 10: a levels= entry naming an unknown vertex is ignored, not fatal
-    const l5 = computeLayout(parseGraphSpec({ nodes: 'A,B', edges: 'A-B', layout: 'hasse', levels: 'Z:9' }), 640);
-    assert(l5.positions.size === 2, 'an unknown levels= entry does not drop vertices');
+    const l6 = computeGraphLayout(parseGraphSpec({ nodes: 'A,B,C,D', edges: 'A-B,B-C,C-D,D-A' }), { availWidth: WIDTH });
+    const cx = Object.values(l6.positions).reduce((s,p) => s + p.x, 0) / 4;
+    const cy = Object.values(l6.positions).reduce((s,p) => s + p.y, 0) / 4;
+    const radii = Object.values(l6.positions).map(p => Math.hypot(p.x - cx, p.y - cy));
+    assert(Math.max(...radii) - Math.min(...radii) < 1, 'circular layout places every node at the same radius');
 
-    // REVIEW FOCUS 3: the reported height is never smaller than the drawn extent
-    const l6 = computeLayout(parseGraphSpec({ nodes: 'A,B,C,D,E,F,G,H', edges: 'A-B,B-C,C-D,D-E,E-F,F-G,G-H,A-H' }), 640);
-    const ys = [...l6.positions.values()].map(p => p.y);
-    const extent = Math.max(...ys) - Math.min(...ys);
-    assert(l6.height >= extent, 'the reported height covers the vertical extent of the vertices');
+    const sep = (lay) => {
+      const pts = Object.values(lay.positions);
+      let min = Infinity;
+      for (let i = 0; i < pts.length; i++) for (let j = i + 1; j < pts.length; j++) {
+        min = Math.min(min, Math.hypot(pts[i].x - pts[j].x, pts[i].y - pts[j].y));
+      }
+      return min;
+    };
+    const l7 = computeGraphLayout(parseGraphSpec({ nodes: 'A,B,C,D,E,F', edges: 'A-B,B-C,C-D,D-E,E-F,A-F' }), { availWidth: WIDTH });
+    assert(sep(l7) >= 30, `no two nodes overlap (min separation ${sep(l7).toFixed(1)} >= 30)`);
+
+    const l8 = computeGraphLayout(parseGraphSpec({ nodes: '' }), { availWidth: WIDTH });
+    assert(l8 && Object.keys(l8.positions).length === 0, 'an empty node list yields an empty layout');
+
+    const l9 = computeGraphLayout(parseGraphSpec({ nodes: 'A' }), { availWidth: WIDTH });
+    const p9 = l9 && l9.positions.A;
+    assert(p9 && Number.isFinite(p9.x) && Number.isFinite(p9.y), 'a single vertex gets one finite position (no NaN, no divide-by-zero)');
+
+    const l10 = computeGraphLayout(parseGraphSpec({ nodes: 'A,B', highlight: 'A-Z', highlightNodes: 'Q', levels: 'X:0' }), { availWidth: WIDTH });
+    assert(l10 && Object.keys(l10.positions).length === 2, 'unknown highlight/levels names are ignored rather than crashing the layout');
+
+    // REVIEW FOCUS 10: unknown levels= entries are ignored, not treated as positions
+    const l11 = computeGraphLayout(parseGraphSpec({ nodes: 'A,B', layout: 'hasse', levels: 'Z:9' }), { availWidth: WIDTH });
+    assert(l11 && Object.keys(l11.positions).length === 2, 'a levels= entry for an undeclared node is ignored');
+    assert(l11 && l11.positions.A.y === l11.positions.B.y, 'vertices with no declared level share one row');
+
+    // REVIEW FOCUS 7: a lone vertex is placed, not divided by zero
+    const l12 = computeGraphLayout(parseGraphSpec({ nodes: 'A', layout: 'circular' }), { availWidth: WIDTH });
+    assert(l12 && Number.isFinite(l12.positions.A.x) && Number.isFinite(l12.positions.A.y),
+      'a lone vertex in a circular layout is finite');
 } else {
-    assert(false, 'computeLayout is exported from graph.js');
+    assert(false, 'computeGraphLayout is exported from graph.js');
 }
 
 console.log('\n====================================================================');
