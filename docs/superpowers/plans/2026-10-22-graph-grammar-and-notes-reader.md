@@ -14,9 +14,9 @@
 
 ### Deviation from the spec (deliberate)
 
-Spec §5.4 originally proposed giving `scripts/serve.mjs` an optional **root** argument and serving the reader from `/home/`. This plan implements **both**: an optional root argument *and* a path mount (`/notes`) declared in `notes.config.json`, with the mount always resolved relative to the repository root.
+Spec §5.4 originally proposed giving `scripts/serve.mjs` an optional **root** argument and serving the reader from `~`. This plan implements **both**: an optional root argument *and* a path mount (`/notes`) declared in `notes.config.json`, with the mount always resolved relative to the repository root.
 
-Reason: the QA harness imports project modules by absolute path (`/src/render/...`). A server root of `/home/` would break that convention for every existing assertion suite. The path mount keeps `notes.html` at `/notes.html` and every module import uniform under the default root, while the alternate root still gives the `/ScriptForge/notes.html` URL from the spec's Definition of Done.
+Reason: the QA harness imports project modules by absolute path (`/src/render/...`). A server root of `~` would break that convention for every existing assertion suite. The path mount keeps `notes.html` at `/notes.html` and every module import uniform under the default root, while the alternate root still gives the `/ScriptForge/notes.html` URL from the spec's Definition of Done.
 
 ## Global Constraints
 
@@ -645,7 +645,7 @@ export function stripRootPrefix(pathname, rootPrefix) {
 
 `scripts/serve.mjs`:
 - keep `REPO_ROOT = resolve(import.meta.dirname, '..')`; change `ROOT` to `resolve(process.argv[3] || REPO_ROOT)` so the second CLI argument overrides the server root.
-- compute `ROOT_PREFIX`: when `ROOT` is not inside `REPO_ROOT`'s parent chain, derive it from the path segment between the server root and the repo root (e.g. `ROOT=/home/`, `REPO_ROOT=/home//projects/ScriptForge` → prefix `/ScriptForge`). When `ROOT === REPO_ROOT`, the prefix is `''`.
+- compute `ROOT_PREFIX`: when `ROOT` is not inside `REPO_ROOT`'s parent chain, derive it from the path segment between the server root and the repo root (e.g. `ROOT=~`, `REPO_ROOT=~/projects/ScriptForge` → prefix `/ScriptForge`). When `ROOT === REPO_ROOT`, the prefix is `''`.
 - read `notes.config.json` from `REPO_ROOT` at startup, tolerating its absence (then no mount is served).
 - in the request handler, strip `ROOT_PREFIX` from the pathname first; then, if the stripped path starts with `${mount}/`, compute `resolveMountPath(mount, path.resolve(REPO_ROOT, chaptersDir), rest)`; when it returns a path, serve that file with `Content-Type: text/markdown; charset=utf-8`; when it returns `null`, fall through to the existing 403/404 handling.
 - add `'.md': 'text/markdown; charset=utf-8'` to `CONTENT_TYPES`.

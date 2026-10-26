@@ -4,6 +4,8 @@ Dynamic stroke, 2D math and hand-drawn diagram engine. Turns a plain-text docume
 hand-written notebook page rendered as vectors — with every glyph uniquely perturbed, so no two
 letters on the page are ever identical.
 
+**▶ Try it live:** [shyler-web.github.io/scriptforge-handwriting](https://shyler-web.github.io/scriptforge-handwriting/) — 100% offline, runs entirely in your browser. No account, no install, nothing leaves your device.
+
 ![ScriptForge Studio rendering a Digital Logic assignment](docs/screenshot.png)
 
 ## Features

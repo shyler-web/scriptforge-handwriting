@@ -9,7 +9,7 @@
 ## 1. Problem
 
 The owner has a 4.5-hour Discrete Mathematics exam (graph-theory heavy) and a course
-pack at `/home//Discrete Mathematics/` containing:
+pack at `~/Discrete Mathematics/` containing:
 
 | Source | Size | Content |
 |---|---|---|
@@ -86,7 +86,7 @@ assets/styles/notes.css             NEW   notes-shell chrome (sidebar, badges)
 ### 3.2 Course-folder additions
 
 ```
-/home//Discrete Mathematics/Notes/
+~/Discrete Mathematics/Notes/
   00-exam-map-and-priority.md          front matter: priority order, T9 map, time budget
   01-marks-and-algorithm-proofs.md      L18  the rubric: how marks are actually awarded
   02-graph-fundamentals.md              L22
@@ -285,7 +285,7 @@ so it resolves correctly under both roots.
 | Server root | Reader URL | Chapter URL |
 |---|---|---|
 | repo root (default, `npm run dev`) | `http://localhost:8000/notes.html` | `http://localhost:8000/notes/03-trees.md` |
-| `/home/` (`npm run notes`) | `http://localhost:8000/ScriptForge/notes.html` | `http://localhost:8000/ScriptForge/notes/03-trees.md` |
+| `~` (`npm run notes`) | `http://localhost:8000/ScriptForge/notes.html` | `http://localhost:8000/ScriptForge/notes/03-trees.md` |
 
 `package.json` gains `"notes": "node scripts/serve.mjs 8000 ../.."`.
 

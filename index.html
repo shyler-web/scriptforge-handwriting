@@ -56,7 +56,15 @@
                     <button data-action="preset" data-arg="cs_dfa" class="px-2.5 py-1 rounded-md hover:bg-slate-700 text-slate-200 transition font-medium">
                         PCS Pipeline & DFA
                     </button>
+                    <button data-action="preset" data-arg="stress_turbo" class="px-2.5 py-1 rounded-md hover:bg-amber-700/60 bg-amber-800/40 text-amber-200 transition font-semibold border border-amber-700/60">
+                        &#9889; Turbo Stress
+                    </button>
                 </div>
+
+                <label class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-800/40 hover:bg-emerald-700/60 text-emerald-200 border border-emerald-700/60 text-xs font-semibold transition cursor-pointer" title="Load your own .txt notes file into the editor">
+                    &#128193; Load .txt
+                    <input type="file" id="notesFileUpload" accept=".txt,text/plain,text/markdown" class="hidden">
+                </label>
 
                 <button data-action="modal" data-arg="vlmModal" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-medium transition">
                     <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-400"></i>
@@ -362,15 +370,10 @@
             </div>
 
             <p class="text-xs text-slate-300 leading-relaxed">
-                Upload an image of a printed worksheet, textbook problem, or diagram. Uses our <strong>1px Zhang-Suen Centerline Skeletonizer</strong> (100% offline) or an optional <strong>Gemini Flash API Key</strong> to convert problem sheets into multi-page 2D LaTeX + Universal Diagram blocks.
+                Upload an image of a printed worksheet, textbook problem, or diagram. Our <strong>1px Zhang-Suen Centerline Skeletonizer</strong> runs 100% offline in your browser — nothing ever leaves your device — and traces the figure into 1px strokes for the Universal Diagram engine.
             </p>
 
             <div class="space-y-3">
-                <div>
-                    <label class="text-xs font-medium text-slate-300 block mb-1">Optional Gemini API Key (Leave blank for Local Offline Skeletonizer)</label>
-                    <input type="password" id="geminiApiKey" placeholder="AIzaSy... (Never stored or logged)" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500">
-                </div>
-
                 <div class="border-2 border-dashed border-slate-700 hover:border-indigo-500 rounded-xl p-5 text-center transition">
                     <input type="file" id="vlmImageInput" accept="image/*" class="hidden">
                     <label for="vlmImageInput" class="cursor-pointer flex flex-col items-center gap-2">

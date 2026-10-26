@@ -11,11 +11,12 @@
  */
 import { readFileSync, writeFileSync, readdirSync, statSync } from 'node:fs';
 import { join, resolve, dirname } from 'node:path';
+import { homedir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const TAILWIND_PKG = process.env.TAILWIND_PKG ||
-  '/home//.npm/_npx/23232c69e5d221f3/node_modules/tailwindcss';
+  join(homedir(), '.npm', '_npx', '23232c69e5d221f3', 'node_modules', 'tailwindcss');
 
 const { compile } = await import(join(TAILWIND_PKG, 'dist/lib.mjs'));
 

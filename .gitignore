@@ -4,6 +4,12 @@ dist/
 .DS_Store
 .env
 .env.*
+outbox/
+marketing_queue.json
+docs/internal/
+.zcode/
+marketing/
+skills-lock.json
 
 # Validation corpus: handwritten assignment scans carry personal identifiers and
 # the course syllabi are copyrighted. This repo is public, so keep them local.
@@ -21,3 +27,11 @@ scriptforge_handwriting_2d_layout_engine.html
 # Scratch staging area used while applying the Wave 3 drop-in. The applied
 # result lives in src/ and index.html.
 .wave3_stage/
+
+# Personal coursework & local artifacts — carry name/roll number or private
+# chats; keep them out of the public repo.
+Assignment-I (1).pdf
+T9.pdf
+*.ipynb
+DM Quiz 3 - Clear Notes.smd
+WhatsApp Unknown 2026-10-22 at 9.25.05 AM.zip

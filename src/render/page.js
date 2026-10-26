@@ -1,8 +1,11 @@
 /**
- * ScriptForge Multi-Page Notebook Flow & Line-Snap Compositor (`src/render/page.js` - Wave 3)
+ * ScriptForge Multi-Page Notebook Flow & Line-Snap Compositor (`src/render/page.js` - Wave 3 + v1.1 Polish)
  * Automatically paginates arbitrarily long documents across Page 1..N canvases inside `#pagesContainer`
  * while preserving `#notebookCanvas` as Page 1 for 100% backward compatibility.
  * Never splits a 2D equation or diagram across a page boundary.
+ * v1.1 polish: horizontal auto-scaling for wide `$$ ... $$` display math, punctuation-safe
+ * inline math tokenization, multi-word `~~strike-through~~` support, and +18px vertical
+ * clearance between consecutive diagram blocks.
  */
 
 import { HI_DPI, LOGICAL_W, LOGICAL_H, INK_PROFILES } from '../core/config.js';
@@ -40,12 +43,13 @@ function estimateDiagramHeight(specStr, lineSpacing = 34) {
     if (diagType === 'bitfield' || params.fields || params.bits) return 118;
     if (diagType === 'kmap' || params.ones) return 224;
     if (diagType === 'grid' || diagType === 'table') {
+        if (params.cells) return params.pointers ? 124 : 88;
         const rows = (params.rows || '').split(';').filter(Boolean).length;
         return Math.max(96, (rows + 1) * 34 + 28);
     }
     if (diagType === 'tree') return 180;
     if (diagType === 'list' || params.list) return 76;
-    if (diagType === 'svg') return Math.min(219, (parseFloat(params.height) || 195) + 24);
+    if (diagType === 'svg') return (parseFloat(params.height) || 195) + 24;
     if (diagType === 'schematic' || diagType === 'circuit' || diagType === 'flipflop' || diagType === 'dfa') return 200;
     if (diagType === 'canvas2d' || diagType === 'plot' || diagType === 'geometry') return 210;
     return 175;
@@ -232,7 +236,8 @@ export function renderFullPage() {
                 charCounterRef,
                 opts
             );
-            curLineIdx += Math.max(1, Math.ceil(usedH / lineSpacing));
+            // v1.1: +18px vertical clearance so consecutive diagram blocks never collide
+            curLineIdx += Math.max(1, Math.ceil((usedH + 18) / lineSpacing));
             continue;
         }
 
@@ -241,15 +246,24 @@ export function renderFullPage() {
         if (displayMathMatch) {
             const latex = displayMathMatch[1].trim();
             const ast = parseLatexToAST(latex);
-            const m = measureMathAST(ast, baseFontSize * 1.04, lineSpacing);
+            const rawMathFs = baseFontSize * 1.04;
+            const mRaw = measureMathAST(ast, rawMathFs, lineSpacing);
+
+            // v1.1: horizontally auto-scale wide equations so they never clip past rightMargin
+            const availMathW = rightMargin - leftMargin - 24;
+            const mathScale = mRaw.width > availMathW
+                ? Math.max(0.58, availMathW / Math.max(1, mRaw.width))
+                : 1.0;
+            const effectiveMathFs = rawMathFs * mathScale;
+            const m = mathScale < 1.0 ? measureMathAST(ast, effectiveMathFs, lineSpacing) : mRaw;
 
             // Prevent display equation from clipping at page bottom
             ensureVerticalSpace(m.height + 18);
 
             curLineIdx += m.linesAbove;
             const mathY = getBaselineY(curLineIdx);
-            const mathX = leftMargin + Math.max(20, (rightMargin - leftMargin - m.width) * 0.28);
-            renderMathAST(surface.ctx, surface.rc, ast, mathX, mathY, baseFontSize * 1.04, charCounterRef, opts);
+            const mathX = leftMargin + Math.max(12, (rightMargin - leftMargin - m.width) * 0.28);
+            renderMathAST(surface.ctx, surface.rc, ast, mathX, mathY, effectiveMathFs, charCounterRef, opts);
 
             curLineIdx += m.linesBelow;
             continue;
@@ -269,9 +283,15 @@ export function renderFullPage() {
             ensureVerticalSpace(lineSpacing);
         }
 
-        // D. Tokenize inline segments: ~~strike~~, $inline math$, or regular words
+        // D. v1.1: normalize multi-word strike-throughs (inner spaces become NBSP so the
+        // scratch-out stays one cohesive token) and pad punctuation touching $inline math$,
+        // then tokenize: ~~strike~~, $inline math$, or regular words
+        const normalizedLine = line
+            .replace(/~~([^~]+)~~/g, (_, inner) => `~~${inner.trim().replace(/\s+/g, '\u00A0')}~~`)
+            .replace(/([(\[{])(\$[^$]+\$)/g, '$1 $2')
+            .replace(/(\$[^$]+\$)([)\]},.;:!])/g, '$1 $2');
         const tokenRegex = /(~~[^~]+~~|\$[^$]+\$|\S+)/g;
-        const tokens = line.match(tokenRegex) || [];
+        const tokens = normalizedLine.match(tokenRegex) || [];
 
         let curX = leftMargin + 10 + (noise.hash(curLineIdx * 31.7 + opts.handSeed) - 0.3) * 8 * opts.baselineDrift;
 
@@ -308,7 +328,7 @@ export function renderFullPage() {
                 curX += lineFontSize * 0.32;
             } else {
                 const isStruck = tok.startsWith('~~') && tok.endsWith('~~') && tok.length > 4;
-                const cleanWord = isStruck ? tok.slice(2, -2) : tok;
+                const cleanWord = (isStruck ? tok.slice(2, -2) : tok).replace(/\u00A0/g, ' ');
                 const estW = cleanWord.length * lineFontSize * 0.46;
 
                 if (curX + estW > rightMargin && curX > leftMargin + 30) {

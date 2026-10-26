@@ -4,7 +4,7 @@
 
 **Goal:** Author the 11 ordered chapters of the Discrete Mathematics study notebook as ScriptForge DSL, each independently verified for mathematical correctness, and consolidate every correction into `CORRECTIONS.md`.
 
-**Architecture:** Each chapter is a single Markdown file in ScriptForge's markup language, living in `/home//Discrete Mathematics/Notes/`. Every chapter is produced by two independent passes — an authoring pass that writes it from the source pack, and a verification pass that re-derives each theorem and solution from first principles and the slide transcripts without seeing the draft's reasoning. The reader (`notes.html`, built by the companion plan) renders the files directly.
+**Architecture:** Each chapter is a single Markdown file in ScriptForge's markup language, living in `~/Discrete Mathematics/Notes/`. Every chapter is produced by two independent passes — an authoring pass that writes it from the source pack, and a verification pass that re-derives each theorem and solution from first principles and the slide transcripts without seeing the draft's reasoning. The reader (`notes.html`, built by the companion plan) renders the files directly.
 
 **Tech Stack:** Markdown in ScriptForge DSL; headless-Chrome QA for render verification; plain Node for delimiter checks.
 
@@ -78,7 +78,7 @@ Figures the existing `grid`, `schematic` and `canvas2d` grammars already cover a
 ### Task 1: Chapter 00 — Exam Map & Priority Order
 
 **Files:**
-- Create: `/home//Discrete Mathematics/Notes/00-exam-map-and-priority.md`
+- Create: `~/Discrete Mathematics/Notes/00-exam-map-and-priority.md`
 
 **Interfaces:**
 - Consumes: `notes/T9-tutorial-9-model-paper.md` (problem index + traps), `START_HERE.md` (the schedule), `Lessons/02-*.md` (the rubric), `src/notes/manifest.js` (chapter list).
@@ -118,12 +118,12 @@ with `QA_BASE=http://localhost:8000/notes.html` and the server running from the 
 - [ ] **Step 5: Commit**
 
 ```bash
-cd "/home//Discrete Mathematics"
+cd "~/Discrete Mathematics"
 git add Notes/00-exam-map-and-priority.md 2>/dev/null || true
 ```
 The course folder is **not** a git repository. Commit only the ScriptForge-side changes; the chapter files live outside version control. Record the chapter path in the commit message instead:
 ```bash
-cd /home//projects/ScriptForge
+cd ~/projects/ScriptForge
 git commit --allow-empty -m "docs(notes): add chapter 00 exam map and priority order"
 ```
 
@@ -132,7 +132,7 @@ git commit --allow-empty -m "docs(notes): add chapter 00 exam map and priority o
 ### Task 2: Chapter 01 — Marks & Algorithm Correctness (L18)
 
 **Files:**
-- Create: `/home//Discrete Mathematics/Notes/01-marks-and-algorithm-proofs.md`
+- Create: `~/Discrete Mathematics/Notes/01-marks-and-algorithm-proofs.md`
 
 **Interfaces:**
 - Consumes: `Lessons/02-proving-algorithm-correctness-and-marking.md` (all sections), `notes/18-minor-exam-rubrics-and-algorithm-correctness.md`, `corpus_text/Lecture_18__21_Sep_2026.txt`.
@@ -165,7 +165,7 @@ Append every discrepancy to `Notes/CORRECTIONS.md` using the format defined in T
 
 Render-check as in Task 1, Step 4. Then:
 ```bash
-cd /home//projects/ScriptForge
+cd ~/projects/ScriptForge
 git commit --allow-empty -m "docs(notes): add chapter 01 marks and algorithm correctness"
 ```
 
@@ -174,7 +174,7 @@ git commit --allow-empty -m "docs(notes): add chapter 01 marks and algorithm cor
 ### Task 3: Chapter 02 — Graph Fundamentals (L22)
 
 **Files:**
-- Create: `/home//Discrete Mathematics/Notes/02-graph-fundamentals.md`
+- Create: `~/Discrete Mathematics/Notes/02-graph-fundamentals.md`
 
 **Interfaces:**
 - Consumes: `Lessons/05-graph-fundamentals.md`, `notes/22-graphs-fundamentals.md`, `corpus_text/Lecture_22.txt`, T9 Problems 3, 4, 5, 6, 8, 11, 14.
@@ -205,7 +205,7 @@ Re-derive the Handshaking Lemma proof, the bipartite ⇔ 2-colouring equivalence
 - [ ] **Step 5: Render-check and commit**
 
 ```bash
-cd /home//projects/ScriptForge
+cd ~/projects/ScriptForge
 git commit --allow-empty -m "docs(notes): add chapter 02 graph fundamentals"
 ```
 
@@ -214,7 +214,7 @@ git commit --allow-empty -m "docs(notes): add chapter 02 graph fundamentals"
 ### Task 4: Chapter 03 — Trees & Binary Trees (L28, L29)
 
 **Files:**
-- Create: `/home//Discrete Mathematics/Notes/03-trees.md`
+- Create: `~/Discrete Mathematics/Notes/03-trees.md`
 
 **Interfaces:**
 - Consumes: `Lessons/09-trees-and-binary-trees.md`, `notes/28-trees.md`, `notes/29-rooted-trees-and-binary-trees.md`, `corpus_text/Lecture_28.txt`, `corpus_text/Lecture_29.txt`, T9 Problems 2, 5, 9, 10, 12, 13, 20.
@@ -252,7 +252,7 @@ Re-derive every theorem proof and every T9 solution from first principles withou
 - [ ] **Step 5: Render-check and commit**
 
 ```bash
-cd /home//projects/ScriptForge
+cd ~/projects/ScriptForge
 git commit --allow-empty -m "docs(notes): add chapter 03 trees and binary trees"
 ```
 
@@ -261,7 +261,7 @@ git commit --allow-empty -m "docs(notes): add chapter 03 trees and binary trees"
 ### Task 5: Chapter 04 — Connectivity (L25)
 
 **Files:**
-- Create: `/home//Discrete Mathematics/Notes/04-connectivity.md`
+- Create: `~/Discrete Mathematics/Notes/04-connectivity.md`
 
 **Interfaces:**
 - Consumes: `Lessons/07-connectivity-cut-vertices-and-edges.md`, `notes/25-connectivity.md`, `corpus_text/Lecture_25.txt`, T9 Problems 1, 12, 14.
@@ -299,7 +299,7 @@ Re-derive the cut-vertex procedure, both directions of T9 Problem 12, and the T9
 - [ ] **Step 5: Render-check and commit**
 
 ```bash
-cd /home//projects/ScriptForge
+cd ~/projects/ScriptForge
 git commit --allow-empty -m "docs(notes): add chapter 04 connectivity"
 ```
 
@@ -308,7 +308,7 @@ git commit --allow-empty -m "docs(notes): add chapter 04 connectivity"
 ### Task 6: Chapter 05 — Matching & Hall's Theorem (L24)
 
 **Files:**
-- Create: `/home//Discrete Mathematics/Notes/05-matching-and-hall.md`
+- Create: `~/Discrete Mathematics/Notes/05-matching-and-hall.md`
 
 **Interfaces:**
 - Consumes: `Lessons/06-matching-and-halls-theorem.md`, `notes/24-matching-and-hall-theorem.md`, `corpus_text/Lecture_24.txt`, `corpus_text/Lecture_24-1.txt`, T9 Problems 15, 16, 17, 18, 19.
@@ -344,7 +344,7 @@ Re-derive Hall's Theorem proof skeletons, the degree-constrained theorem, and al
 - [ ] **Step 5: Render-check and commit**
 
 ```bash
-cd /home//projects/ScriptForge
+cd ~/projects/ScriptForge
 git commit --allow-empty -m "docs(notes): add chapter 05 matching and hall's theorem"
 ```
 
@@ -353,7 +353,7 @@ git commit --allow-empty -m "docs(notes): add chapter 05 matching and hall's the
 ### Task 7: Chapter 06 — Hamiltonian Paths & Graph Isomorphism (L27)
 
 **Files:**
-- Create: `/home//Discrete Mathematics/Notes/06-hamilton-and-isomorphism.md`
+- Create: `~/Discrete Mathematics/Notes/06-hamilton-and-isomorphism.md`
 
 **Interfaces:**
 - Consumes: `Lessons/08-hamilton-paths-and-graph-isomorphism.md`, `notes/27-hamiltonian-paths-and-isomorphism.md`, `corpus_text/Lecture_27.txt`, T9 Problems 1, 7, 10.
@@ -389,7 +389,7 @@ Re-derive Dirac's theorem hypothesis and conclusion, and all three T9 solutions.
 - [ ] **Step 5: Render-check and commit**
 
 ```bash
-cd /home//projects/ScriptForge
+cd ~/projects/ScriptForge
 git commit --allow-empty -m "docs(notes): add chapter 06 hamiltonian paths and isomorphism"
 ```
 
@@ -398,7 +398,7 @@ git commit --allow-empty -m "docs(notes): add chapter 06 hamiltonian paths and i
 ### Task 8: Chapter 07 — Mathematical & Strong Induction (L16, L17)
 
 **Files:**
-- Create: `/home//Discrete Mathematics/Notes/07-induction.md`
+- Create: `~/Discrete Mathematics/Notes/07-induction.md`
 
 **Interfaces:**
 - Consumes: `Lessons/01-mathematical-induction.md`, `notes/16-mathematical-induction.md`, `notes/17-strong-induction-and-proof-strategies.md`, `corpus_text/Lecture_16_17.txt`, T9 Problem 13.
@@ -430,7 +430,7 @@ Re-derive both induction principles and every worked example's arithmetic (the d
 - [ ] **Step 5: Render-check and commit**
 
 ```bash
-cd /home//projects/ScriptForge
+cd ~/projects/ScriptForge
 git commit --allow-empty -m "docs(notes): add chapter 07 mathematical induction"
 ```
 
@@ -439,7 +439,7 @@ git commit --allow-empty -m "docs(notes): add chapter 07 mathematical induction"
 ### Task 9: Chapter 08 — Relations (L19)
 
 **Files:**
-- Create: `/home//Discrete Mathematics/Notes/08-relations.md`
+- Create: `~/Discrete Mathematics/Notes/08-relations.md`
 
 **Interfaces:**
 - Consumes: `Lessons/03-relations-and-equivalence.md`, `notes/19-relations.md`, `corpus_text/Lecture_19__1_.txt`.
@@ -466,7 +466,7 @@ Re-derive each class theorem's proof route from the definitions. Re-run the five
 - [ ] **Step 5: Render-check and commit**
 
 ```bash
-cd /home//projects/ScriptForge
+cd ~/projects/ScriptForge
 git commit --allow-empty -m "docs(notes): add chapter 08 relations"
 ```
 
@@ -475,7 +475,7 @@ git commit --allow-empty -m "docs(notes): add chapter 08 relations"
 ### Task 10: Chapter 09 — Partial Orders, Hasse Diagrams & Lattices (L20, L21)
 
 **Files:**
-- Create: `/home//Discrete Mathematics/Notes/09-partial-orders-hasse-lattices.md`
+- Create: `~/Discrete Mathematics/Notes/09-partial-orders-hasse-lattices.md`
 
 **Interfaces:**
 - Consumes: `Lessons/04-partial-orders-hasse-diagrams-lattices.md`, `notes/20-partial-orders-and-hasse-diagrams.md`, `corpus_text/Lecture_20_21.txt`.
@@ -505,7 +505,7 @@ Re-derive T3, T4, T9, T10 and T12 (the theorems `Lessons/04` marks as standard a
 - [ ] **Step 5: Render-check and commit**
 
 ```bash
-cd /home//projects/ScriptForge
+cd ~/projects/ScriptForge
 git commit --allow-empty -m "docs(notes): add chapter 09 partial orders and hasse diagrams"
 ```
 
@@ -514,7 +514,7 @@ git commit --allow-empty -m "docs(notes): add chapter 09 partial orders and hass
 ### Task 11: Chapter 10 — Safety Net: Euler, Planarity, Colouring, Spanning Trees (L23, L26)
 
 **Files:**
-- Create: `/home//Discrete Mathematics/Notes/10-safety-net-euler-planarity.md`
+- Create: `~/Discrete Mathematics/Notes/10-safety-net-euler-planarity.md`
 
 **Interfaces:**
 - Consumes: `Lessons/10-safety-net-euler-planarity-colouring-spanning-trees.md`, `corpus_text/Lecture_20.txt` and `corpus_text/Lecture_20_21.txt` (for the material that overlaps), `notes/28-trees.md` (spanning-tree section).
@@ -546,7 +546,7 @@ Re-derive Euler's formula for the plane case, the two edge bounds, and the spann
 - [ ] **Step 5: Render-check and commit**
 
 ```bash
-cd /home//projects/ScriptForge
+cd ~/projects/ScriptForge
 git commit --allow-empty -m "docs(notes): add chapter 10 safety net"
 ```
 
@@ -555,8 +555,8 @@ git commit --allow-empty -m "docs(notes): add chapter 10 safety net"
 ### Task 12: Corrections log, chapter index, and merged export
 
 **Files:**
-- Create: `/home//Discrete Mathematics/Notes/CORRECTIONS.md`
-- Create: `/home//Discrete Mathematics/Notes/INDEX.md`
+- Create: `~/Discrete Mathematics/Notes/CORRECTIONS.md`
+- Create: `~/Discrete Mathematics/Notes/INDEX.md`
 - Modify: `src/notes/manifest.js` (add the correction log and index to the reader's extras)
 
 **Interfaces:**
@@ -611,7 +611,7 @@ and confirm the resulting PDF's page count matches the sum of the per-chapter pa
 - [ ] **Step 6: Commit**
 
 ```bash
-cd /home//projects/ScriptForge
+cd ~/projects/ScriptForge
 git add src/notes/manifest.js notes.html
 git commit -m "feat(notes): add corrections log and chapter index to the reader"
 ```
