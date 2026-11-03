@@ -263,6 +263,21 @@ if (mod && mod.computeGraphLayout) {
     const l12 = computeGraphLayout(parseGraphSpec({ nodes: 'A', layout: 'circular' }), { availWidth: WIDTH });
     assert(l12 && Number.isFinite(l12.positions.A.x) && Number.isFinite(l12.positions.A.y),
       'a lone vertex in a circular layout is finite');
+
+    // REVIEW FOCUS 8: an explicitly requested layered layout must also handle cycles
+    const layeredCycle = (edges) => {
+        try {
+            return computeGraphLayout(parseGraphSpec({ nodes: 'A,B,C', edges, layout: 'layered' }), { availWidth: WIDTH });
+        } catch (err) {
+            return null;
+        }
+    };
+    const l13 = layeredCycle('A->B,B->C,C->A');
+    assert(l13 && Object.keys(l13.positions).length === 3,
+      'a directed cyclic graph with explicit layout=layered computes a finite layout');
+    const l14 = layeredCycle('A-B,B-C,C-A');
+    assert(l14 && Object.keys(l14.positions).length === 3,
+      'an undirected cyclic graph with explicit layout=layered computes a finite layout');
 } else {
     assert(false, 'computeGraphLayout is exported from graph.js');
 }

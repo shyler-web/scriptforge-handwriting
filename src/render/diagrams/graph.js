@@ -275,7 +275,7 @@ function eccentricityLayers(spec, adjacency) {
     const depth = new Map(spec.nodes.map((n) => [n.id, 0]));
     for (const root of spec.nodes) {
         const seen = new Set([root.id]);
-        const queue = [root.id];
+        let queue = [root.id];
         let distance = 0;
         while (queue.length) {
             distance++;
@@ -774,6 +774,20 @@ export function computeGraphLayout(spec, opts = {}) {
             const forward = buildForwardAdjacency(spec);
             const depth = longestPathLayers(spec, forward)
                 || eccentricityLayers(spec, adjacency)
+                || bfsLayers(spec, adjacency, pickSmallestDegreeRoot(spec, adjacency));
+            const byDepth = new Map();
+            for (const id of ids) {
+                const d = depth.get(id) || 0;
+                if (!byDepth.has(d)) byDepth.set(d, []);
+                byDepth.get(d).push(id);
+            }
+            rows = [];
+            for (let d = 0; d <= Math.max(0, ...byDepth.keys()); d++) rows.push(byDepth.get(d) || []);
+            rows = orderLayersByBarycentre(rows, adjacency);
+        } else if (hasCycle(spec.nodes, spec.edges)) {
+            // An undirected cycle is not a tree, so tree placement would
+            // recurse forever. Lay it out in rows by BFS eccentricity.
+            const depth = eccentricityLayers(spec, adjacency)
                 || bfsLayers(spec, adjacency, pickSmallestDegreeRoot(spec, adjacency));
             const byDepth = new Map();
             for (const id of ids) {

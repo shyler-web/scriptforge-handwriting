@@ -351,8 +351,12 @@ export function renderTreeOrListSchematic(ctx, rc, params, startX, startY, avail
 
     rawEdges.forEach(eStr => {
         const [pair, lbl = ''] = eStr.split(':').map(s => s.trim());
-        const [u, v] = pair.split('->').map(s => s.trim());
-        if (!u || !v) return;
+        // Accept the documented `u-v` form as well as `u->v`; a hyphenated
+        // edge is treated as parent -> child in the order written.
+        const arrowParts = pair.split('->').map(s => s.trim());
+        const dashParts = arrowParts.length === 2 ? [] : pair.split('-').map(s => s.trim());
+        const [u, v] = arrowParts.length === 2 ? arrowParts : dashParts;
+        if (!u || !v || arrowParts.length > 2 || dashParts.length > 2) return;
         if (!adj.has(u)) adj.set(u, []);
         if (!adj.has(v)) adj.set(v, []);
         adj.get(u).push(v);
