@@ -195,6 +195,34 @@ export async function initNotes() {
     const reload = document.getElementById('reloadNoteBtn');
     if (reload) reload.addEventListener('click', reloadCurrentNote);
 
+    const upload = document.getElementById('notesFileUpload');
+    if (upload) {
+        upload.addEventListener('change', async (event) => {
+            const file = event.target.files && event.target.files[0];
+            if (!file) return;
+            try {
+                const text = await file.text();
+                const front = splitFrontmatter(text);
+                applyMeta(front.meta);
+                const editor = document.getElementById('docInput');
+                if (editor) {
+                    editor.value = front.body;
+                    editor.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+                scheduleRender();
+                currentNote = null;
+                lastLoadedText = '';
+                lastLoadedBody = front.body;
+                select.value = '';
+                setStatus(`Loaded local file ${file.name}`, 'ok');
+            } catch (err) {
+                setStatus(`Could not read ${file.name}: ${err.message}`, 'error');
+            } finally {
+                upload.value = '';
+            }
+        });
+    }
+
     if (!entries.length) {
         setStatus('No notes yet. Ask an MCP agent to create one.', 'muted');
     }

@@ -5,7 +5,7 @@
 
 export const PRESETS = {
     ee_kmap: `# Digital Logic & Sequential Circuits — Assignment
-Name: Aarav Sharma    
+Name: Aarav Sharma
 
 Q1. Simplify the 4-Variable Boolean Function via Karnaugh Map:
 $$ F(A, B, C, D) = \\sum m(0, 2, 5, 7, 8, 10, 13, 15) $$
@@ -35,7 +35,7 @@ Step 3: Complete Sequential Logic Diagram with Orthogonal Feedback Buses:
 [DIAGRAM: schematic | type=flipflop | ff=SR | target=T]`,
 
     calc_physics: `# Probability, Statistics & Stochastic Processes
-Name: Aarav Sharma    
+Name: Aarav Sharma
 
 Q4 & Q7: Continuous Density Transformation & Binomial Inverse Moment:
 Given $f(x) = \\frac{8}{\\pi}\\sqrt{x(1-x)}$ on $0 < x < 1$, and $X \\sim \\text{Binomial}(n, p)$:
@@ -60,7 +60,7 @@ Q10: Conditional Density $f(x) = 4x^3$ on $0 < x < 1$ Shaded Over $[1/3, 2/3]$:
 $$ E\\left[X \\,\\middle|\\, \\frac{1}{3} < X < \\frac{2}{3}\\right] = \\frac{\\int_{1/3}^{2/3} x \\cdot 4x^3 \\, dx}{\\int_{1/3}^{2/3} 4x^3 \\, dx} = \\frac{4}{5} \\cdot \\frac{(2/3)^5 - (1/3)^5}{(2/3)^4 - (1/3)^4} = \\frac{124}{225} \\approx 0.5511 $$`,
 
     cs_dfa: `# Principles of Computer Systems (PCS) — Assignment 2
-Name: Aarav Sharma    
+Name: Aarav Sharma
 
 Q1 & Q2. 32-Bit Instruction Word Format & Register Field Encoding:
 For a CPU with 16 general-purpose registers ($R_0..R_{15}$) and a 6-bit Opcode executing ADD R1, R2, R3:

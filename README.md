@@ -10,14 +10,16 @@ the browser, with no build step, no cloud service and no API key.
 It is built for visual study guides, revision notebooks, engineering assignments and
 accessible hand-written renditions of technical material.
 
+**Try it live:** [shyler-web.github.io/scriptforge-handwriting](https://shyler-web.github.io/scriptforge-handwriting/) — 100% offline, runs entirely in your browser. No account, no install, nothing leaves your device.
+
 ![ScriptForge rendering a Digital Logic assignment](docs/screenshot.png)
 
 ---
 
 ## Why ScriptForge
 
-- **Offline by design** — rendering, pagination, PDF compilation and note validation run
-  locally. The optional vision parser is the only feature that can call a network API.
+- **Offline by design** — rendering, pagination, PDF compilation, image tracing and note
+  validation all run locally. Only the cosmetic Lucide icon CDN is optional.
 - **Declarative, not hand-drawn** — an agent or a human writes compact markup; the engine
   produces the handwriting, diagrams and page layout.
 - **Agent-readable grammar** — an MCP server exposes note tools, a strict DSL validator and
@@ -236,7 +238,7 @@ src/
   main.js                   Studio boot and notes-library initialization.
   core/                     Config, noise, state, render options.
   render/                   Glyph bank, paper, pagination, PDF, math and diagrams.
-  ui/                       Event router, controls, notes library, optional VLM.
+  ui/                       Event router, controls, notes library, offline image tracer.
 scripts/
   serve.mjs                 Zero-dependency static server (no-store for /notes/).
   notes-cli.mjs             MCP-free note operations.
@@ -284,9 +286,8 @@ node scripts/build-tailwind.mjs
 - `delete_note` requires `confirm: true`.
 - `notes/private/` and its index are git-ignored. Personal PDFs, notebooks, archives and
   internal planning material are ignored too.
-- The optional vision-language parser is the only network-capable data feature. A key entered
-  in its modal is used directly from the browser and is never stored or committed; leaving it
-  blank keeps the pipeline fully local. Lucide icons load from a CDN and fail gracefully offline.
+- Image parsing is fully offline (1px Zhang-Suen centerline tracing). No API key is read or
+  stored. Lucide icons load from a CDN and fail gracefully offline.
 
 ---
 
