@@ -36,25 +36,31 @@
                     <div class="flex items-center gap-2">
                         <h1 class="font-bold text-base tracking-tight text-white">ScriptForge Studio</h1>
                         <span class="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-                            Universal 2D Math + 5 Diagram Engines
+                            Universal Math + 6 Sketch Waves
                         </span>
                     </div>
-                    <p class="text-xs text-slate-400 hidden sm:block">Zero-Clone Allography • Multi-Page Auto-Pagination • Universal Grids, Schematics, Plots & SVG</p>
+                    <p class="text-xs text-slate-400 hidden sm:block">Zero-Clone Allography • 2D Spatial Cheat Sheets • Chemistry, CS, Physics & 3D</p>
                 </div>
             </div>
 
             <!-- Preset Switcher & Export Actions -->
             <div class="flex flex-wrap items-center gap-2">
-                <div class="flex items-center bg-slate-800/90 p-1 rounded-lg border border-slate-700/70 text-xs">
+                <div class="flex flex-wrap items-center bg-slate-800/90 p-1 rounded-lg border border-slate-700/70 text-xs">
                     <span class="px-2 text-slate-400 font-medium hidden md:inline">Demos:</span>
-                    <button data-action="preset" data-arg="ee_kmap" class="px-2.5 py-1 rounded-md hover:bg-slate-700 text-slate-200 transition font-medium">
-                        Digital Logic & Bitfields
+                    <button data-action="preset" data-arg="spatial_cheatsheet" class="px-2.5 py-1 rounded-md hover:bg-slate-700 text-slate-200 transition font-medium">
+                        Spatial Cheat Sheet
                     </button>
-                    <button data-action="preset" data-arg="calc_physics" class="px-2.5 py-1 rounded-md hover:bg-slate-700 text-slate-200 transition font-medium">
-                        Probability & Plots
+                    <button data-action="preset" data-arg="organic_chem" class="px-2.5 py-1 rounded-md hover:bg-slate-700 text-slate-200 transition font-medium">
+                        Organic Chemistry
                     </button>
-                    <button data-action="preset" data-arg="cs_dfa" class="px-2.5 py-1 rounded-md hover:bg-slate-700 text-slate-200 transition font-medium">
-                        PCS Pipeline & DFA
+                    <button data-action="preset" data-arg="cs_systems" class="px-2.5 py-1 rounded-md hover:bg-slate-700 text-slate-200 transition font-medium">
+                        CS Systems
+                    </button>
+                    <button data-action="preset" data-arg="physics_optics" class="px-2.5 py-1 rounded-md hover:bg-slate-700 text-slate-200 transition font-medium">
+                        Physics &amp; Optics
+                    </button>
+                    <button data-action="preset" data-arg="three_d_calculus" class="px-2.5 py-1 rounded-md hover:bg-slate-700 text-slate-200 transition font-medium">
+                        3D &amp; Calculus
                     </button>
                 </div>
 
@@ -115,24 +121,25 @@
                     <button id="reloadNoteBtn" class="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-[11px] font-medium transition" title="Reload the selected note from disk">
                         Reload
                     </button>
+                    <button data-action="downloadSkill" class="flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-[11px] font-medium transition" title="Download the complete ScriptForge agent skill file">
+                        <i data-lucide="download" class="w-3.5 h-3.5 text-cyan-400"></i>
+                        <span>AI Skill</span>
+                    </button>
                 </div>
                 <div id="notesStatus" class="hidden mt-2 text-[11px] text-slate-400"></div>
             </div>
 
-            <!-- Quick Insert Snippet Bar -->
-            <div class="flex flex-wrap gap-1.5">
-                <button data-action="snippet" data-arg="math_frac" class="text-[11px] px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-indigo-300 border border-slate-700/80 transition">+ 2D Integral/Frac</button>
-                <button data-action="snippet" data-arg="math_matrix" class="text-[11px] px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-indigo-300 border border-slate-700/80 transition">+ Matrix/Cases</button>
-                <button data-action="snippet" data-arg="diag_bitfield" class="text-[11px] px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-slate-700/80 transition">+ 32b Bitfield</button>
-                <button data-action="snippet" data-arg="diag_grid" class="text-[11px] px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-slate-700/80 transition">+ Table/Pipeline</button>
-                <button data-action="snippet" data-arg="diag_kmap" class="text-[11px] px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-slate-700/80 transition">+ K-Map</button>
-                <button data-action="snippet" data-arg="diag_circuit" class="text-[11px] px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-slate-700/80 transition">+ Flip-Flop/Circuit</button>
-                <button data-action="snippet" data-arg="diag_dfa" class="text-[11px] px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-slate-700/80 transition">+ Automaton</button>
-                <button data-action="snippet" data-arg="diag_tree" class="text-[11px] px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-slate-700/80 transition">+ Binary Tree</button>
-                <button data-action="snippet" data-arg="diag_plot" class="text-[11px] px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700/80 transition">+ Shaded Plot</button>
-                <button data-action="snippet" data-arg="diag_svg" class="text-[11px] px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700/80 transition">+ Raw SVG</button>
-                <button data-action="snippet" data-arg="strike" class="text-[11px] px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-rose-300 border border-slate-700/80 transition">+ Scratch-out</button>
-                <button data-action="snippet" data-arg="pagebreak" class="text-[11px] px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-purple-300 border border-slate-700/80 transition">+ Page Break</button>
+            <!-- Universal Insert Palette -->
+            <div class="flex flex-wrap items-center gap-2">
+                <button data-action="openInsertPalette" class="flex items-center gap-1.5 text-[11px] px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white border border-indigo-500 font-semibold transition">
+                    <i data-lucide="layout-grid" class="w-3.5 h-3.5"></i>
+                    <span>Insert Diagram / Block</span>
+                </button>
+                <button data-action="expandCanvas" class="flex items-center gap-1.5 text-[11px] px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-medium transition">
+                    <i data-lucide="maximize-2" class="w-3.5 h-3.5 text-cyan-400"></i>
+                    <span>Expand Canvas</span>
+                </button>
+                <span class="text-[10px] text-slate-500">Search 40+ presets: sketch layouts, CS, chemistry, discrete, physics, 3D, page modes…</span>
             </div>
 
             <!-- Main Markup Editor -->
@@ -175,6 +182,10 @@
                     <button data-action="zoom" data-arg="-0.1" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs border border-slate-700">-</button>
                     <button data-action="zoom" data-arg="reset" id="zoomLabel" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] mono border border-slate-700">100%</button>
                     <button data-action="zoom" data-arg="0.1" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs border border-slate-700">+</button>
+                    <button data-action="expandCanvas" class="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs transition" title="Open the expanded canvas window (or click any page)">
+                        <i data-lucide="maximize-2" class="w-3.5 h-3.5 text-cyan-400"></i>
+                        <span>Expand</span>
+                    </button>
                     <button data-action="reseed" class="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs transition ml-1" title="Resample all character variations & diagram tremors">
                         <i data-lucide="refresh-cw" class="w-3.5 h-3.5 text-indigo-400"></i>
                         <span>Re-Roll Seed</span>
@@ -369,6 +380,16 @@
                 </div>
 
                 <div>
+                    <label class="text-xs text-slate-400 block mb-1">Canvas Size / Cheat-Sheet Mode</label>
+                    <select id="pagePreset" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+                        <option value="a4">A4 Notebook (1 Column)</option>
+                        <option value="a4-2col">A4 Cheat Sheet (2 Columns)</option>
+                        <option value="a3-landscape">A3 Landscape Chart (3 Columns)</option>
+                        <option value="chart-xl">Mega Wall Chart XL (4 Columns)</option>
+                    </select>
+                </div>
+
+                <div>
                     <div class="flex justify-between text-xs mb-1">
                         <span class="text-slate-300">Phone Shadow &amp; Vignette</span>
                         <span id="val_camShadow" class="mono text-indigo-400">0.35</span>
@@ -394,6 +415,44 @@
             </div>
         </section>
     </main>
+
+    <!-- Universal Insert Palette Modal -->
+    <div id="insertPaletteModal" class="ui-modal hidden">
+        <div class="ui-modal-card insert-palette-card-shell">
+            <div class="ui-modal-header">
+                <div>
+                    <h3 class="ui-modal-title">Insert Diagram / Block</h3>
+                    <p class="ui-modal-subtitle">Search every engine: sketch layouts, CS systems, chemistry, discrete math, physics, 3D, page modes.</p>
+                </div>
+                <button data-action="closeInsertPalette" class="ui-modal-close" title="Close">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div class="insert-palette-toolbar">
+                <input id="insertPaletteSearch" type="search" placeholder="Search presets, e.g. B-tree, Venn, surface, Riemann…" class="insert-palette-search" autocomplete="off">
+                <div id="insertPaletteCategories" class="insert-palette-categories"></div>
+            </div>
+            <div id="insertPaletteGrid" class="insert-palette-grid"></div>
+        </div>
+    </div>
+
+    <!-- Expanded Canvas Viewer -->
+    <div id="canvasExpandModal" class="canvas-expand-modal hidden">
+        <div class="canvas-expand-header">
+            <div class="flex items-center gap-3">
+                <i data-lucide="maximize-2" class="w-5 h-5 text-cyan-400"></i>
+                <div>
+                    <div class="canvas-expand-title">Expanded Canvas</div>
+                    <div id="expandedPageCount" class="canvas-expand-subtitle">1 page</div>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <button data-action="exportPdf" class="canvas-expand-action">PDF</button>
+                <button data-action="closeExpandCanvas" class="canvas-expand-action primary">Close (Esc)</button>
+            </div>
+        </div>
+        <div id="expandedCanvasStack" class="expanded-canvas-stack"></div>
+    </div>
 
     <!-- VLM Document Parser Modal -->
     <div id="vlmModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">

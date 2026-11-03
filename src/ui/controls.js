@@ -6,10 +6,12 @@
 import { state, setHandSeed, setInkKey, toggleInspectVariance } from '../core/state.js';
 import { PRESETS } from '../data/presets.js';
 import { STYLE_PRESETS, DEFAULT_STYLE_PRESET } from '../data/style-presets.js';
+import { SNIPPETS, SNIPPET_CATEGORIES } from './snippets.js';
 import { renderFullPage } from '../render/page.js';
 import { exportMultiPagePdf, exportCurrentPagePng } from '../render/pdfExport.js';
 
 let renderFrameId = null;
+let activeInsertCategory = 'All';
 
 export function scheduleRender() {
     if (renderFrameId) cancelAnimationFrame(renderFrameId);
@@ -63,6 +65,9 @@ export function loadPreset(key) {
     const editor = document.getElementById('docInput');
     if (editor && PRESETS[key]) {
         editor.value = PRESETS[key];
+        const pageMatch = editor.value.match(/^@page\b[^\n]*\bsize=([a-zA-Z0-9-]+)/m);
+        const pageSelect = document.getElementById('pagePreset');
+        if (pageMatch && pageSelect) pageSelect.value = pageMatch[1].toLowerCase();
         scheduleRender();
     }
 }
@@ -120,10 +125,19 @@ export function resetStylePreset() {
     return applyStylePreset(DEFAULT_STYLE_PRESET);
 }
 
-export function insertSnippet(type) {
+export function insertAtCursor(insertStr) {
     const editor = document.getElementById('docInput');
-    if (!editor) return;
+    if (!editor || !insertStr) return;
+    const start = editor.selectionStart ?? editor.value.length;
+    const end = editor.selectionEnd ?? start;
+    const text = editor.value;
+    editor.value = text.slice(0, start) + insertStr + text.slice(end);
+    editor.selectionStart = editor.selectionEnd = start + insertStr.length;
+    editor.focus();
+    scheduleRender();
+}
 
+export function insertSnippet(type) {
     const snippets = {
         math_frac: `\n$$ f(x) = \\int_{0}^{\\pi} \\frac{\\sin(x) + \\sqrt{x^2 + 1}}{2\\alpha} dx $$\n`,
         math_matrix: `\n$$ A = \\begin{bmatrix} \\lambda_1 & -\\omega \\\\ \\omega & \\lambda_2 \\end{bmatrix}, \\quad g(x) = \\begin{cases} x^2 & x \\geq 0 \\\\ -x & x < 0 \\end{cases} $$\n`,
@@ -138,13 +152,7 @@ export function insertSnippet(type) {
         strike: ` ~~mistake~~ `,
         pagebreak: `\n---PAGE---\n`
     };
-
-    const start = editor.selectionStart ?? editor.value.length;
-    const text = editor.value;
-    const insertStr = snippets[type] || '';
-    editor.value = text.slice(0, start) + insertStr + text.slice(start);
-    editor.focus();
-    scheduleRender();
+    insertAtCursor(snippets[type] || '');
 }
 
 export function insertCustomImageTag() {
@@ -153,6 +161,187 @@ export function insertCustomImageTag() {
         editor.value += '\n\n[DIAGRAM: custom_image]\n';
     }
     scheduleRender();
+}
+
+// ---------------------------------------------------------------------------
+// Insert Diagram / Block palette
+// ---------------------------------------------------------------------------
+export function openInsertPalette() {
+    const modal = document.getElementById('insertPaletteModal');
+    if (!modal) return;
+    activeInsertCategory = 'All';
+    const search = document.getElementById('insertPaletteSearch');
+    if (search) search.value = '';
+    renderInsertPalette();
+    modal.classList.remove('hidden');
+    modal.classList.add('open');
+    if (search) setTimeout(() => search.focus(), 40);
+}
+
+export function closeInsertPalette() {
+    const modal = document.getElementById('insertPaletteModal');
+    if (modal) {
+        modal.classList.remove('open');
+        modal.classList.add('hidden');
+    }
+}
+
+export function setInsertCategory(category) {
+    activeInsertCategory = category || 'All';
+    renderInsertPalette();
+}
+
+export function renderInsertPalette() {
+    const grid = document.getElementById('insertPaletteGrid');
+    const catBar = document.getElementById('insertPaletteCategories');
+    if (!grid) return;
+
+    if (catBar) {
+        catBar.innerHTML = '';
+        for (const cat of SNIPPET_CATEGORIES) {
+            const chip = document.createElement('button');
+            chip.type = 'button';
+            chip.className = `insert-category-chip${cat === activeInsertCategory ? ' active' : ''}`;
+            chip.setAttribute('data-action', 'insertPaletteCategory');
+            chip.setAttribute('data-arg', cat);
+            chip.textContent = cat;
+            catBar.appendChild(chip);
+        }
+    }
+
+    const query = (document.getElementById('insertPaletteSearch')?.value || '').trim().toLowerCase();
+    const items = SNIPPETS.filter((item) => {
+        if (activeInsertCategory !== 'All' && item.category !== activeInsertCategory) return false;
+        if (!query) return true;
+        return `${item.title} ${item.desc} ${item.category} ${item.id}`.toLowerCase().includes(query);
+    });
+
+    grid.innerHTML = '';
+    if (items.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'insert-palette-empty';
+        empty.textContent = 'No presets match that search.';
+        grid.appendChild(empty);
+        return;
+    }
+
+    for (const item of items) {
+        const card = document.createElement('button');
+        card.type = 'button';
+        card.className = 'insert-palette-card';
+        card.setAttribute('data-action', 'insertPaletteItem');
+        card.setAttribute('data-arg', item.id);
+
+        const title = document.createElement('span');
+        title.className = 'insert-palette-title';
+        title.textContent = item.title;
+
+        const meta = document.createElement('span');
+        meta.className = 'insert-palette-cat';
+        meta.textContent = item.category;
+
+        const desc = document.createElement('span');
+        desc.className = 'insert-palette-desc';
+        desc.textContent = item.desc;
+
+        card.append(title, meta, desc);
+        grid.appendChild(card);
+    }
+}
+
+export function insertPaletteSnippet(id) {
+    const item = SNIPPETS.find((entry) => entry.id === id);
+    if (!item) return;
+
+    // Page presets must live at the very top of the document.
+    if (item.snippet.trim().startsWith('@page')) {
+        const editor = document.getElementById('docInput');
+        if (editor) {
+            const prefix = item.snippet.trim();
+            editor.value = `${prefix}\n\n${editor.value}`;
+            editor.selectionStart = editor.selectionEnd = prefix.length + 2;
+            editor.focus();
+            scheduleRender();
+        }
+        closeInsertPalette();
+        return;
+    }
+
+    insertAtCursor(item.snippet);
+    closeInsertPalette();
+}
+
+// ---------------------------------------------------------------------------
+// Expanded canvas viewer
+// ---------------------------------------------------------------------------
+export function openCanvasExpand() {
+    const modal = document.getElementById('canvasExpandModal');
+    const stack = document.getElementById('expandedCanvasStack');
+    if (!modal || !stack) return;
+
+    const canvases = Array.from(document.querySelectorAll('canvas.notebook-page-canvas:not(.hidden)'))
+        .filter((cv) => !cv.closest('#canvasExpandModal'));
+    if (canvases.length === 0) return;
+
+    stack.innerHTML = '';
+    const maxW = 1800;
+    canvases.forEach((cv, idx) => {
+        const scale = Math.min(1, maxW / Math.max(1, cv.width));
+        const clone = document.createElement('canvas');
+        clone.width = Math.max(1, Math.round(cv.width * scale));
+        clone.height = Math.max(1, Math.round(cv.height * scale));
+        clone.className = 'expanded-page-canvas';
+        clone.getContext('2d').drawImage(cv, 0, 0, clone.width, clone.height);
+
+        const wrap = document.createElement('div');
+        wrap.className = 'expanded-page';
+        const label = document.createElement('div');
+        label.className = 'expanded-page-label';
+        label.textContent = `Page ${idx + 1} of ${canvases.length}`;
+        wrap.append(label, clone);
+        stack.appendChild(wrap);
+    });
+
+    const count = document.getElementById('expandedPageCount');
+    if (count) count.textContent = `${canvases.length} page${canvases.length === 1 ? '' : 's'}`;
+
+    modal.classList.remove('hidden');
+    modal.classList.add('open');
+    document.body.style.overflow = 'hidden';
+}
+
+export async function downloadSkill() {
+    try {
+        const response = await fetch(`skills/scriptforge-notes/SKILL.md?t=${Date.now()}`, {
+            cache: 'no-store'
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const text = await response.text();
+        const blob = new Blob([text], { type: 'text/markdown;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'scriptforge-notes-SKILL.md';
+        document.body.appendChild(link);
+        link.click();
+        if (typeof link.remove === 'function') link.remove();
+        else document.body.removeChild(link);
+        setTimeout(() => URL.revokeObjectURL(url), 3000);
+    } catch (err) {
+        console.error('[ScriptForge] skill download failed:', err);
+        alert('Could not download the skill file. Make sure the studio server is running.');
+    }
+}
+
+export function closeCanvasExpand() {
+    const modal = document.getElementById('canvasExpandModal');
+    const stack = document.getElementById('expandedCanvasStack');
+    if (modal) {
+        modal.classList.remove('open');
+        modal.classList.add('hidden');
+    }
+    if (stack) stack.innerHTML = '';
+    document.body.style.overflow = '';
 }
 
 export function toggleModal(id) {

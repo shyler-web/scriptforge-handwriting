@@ -4,7 +4,7 @@
 
 import { PRESETS } from './data/presets.js';
 import { initEvents } from './ui/events.js';
-import { applyStylePreset } from './ui/controls.js';
+import { applyStylePreset, loadPreset } from './ui/controls.js';
 import { initNotes } from './ui/notes.js';
 import { renderFullPage } from './render/page.js';
 
@@ -13,7 +13,8 @@ function bootScriptForge() {
 
     const docInput = document.getElementById('docInput');
     if (docInput && !docInput.value.trim()) {
-        docInput.value = PRESETS.ee_kmap;
+        if (PRESETS.spatial_cheatsheet) loadPreset('spatial_cheatsheet');
+        else docInput.value = PRESETS.ee_kmap;
     }
 
     initEvents();

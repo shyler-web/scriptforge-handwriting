@@ -14,6 +14,14 @@ import {
     resetStylePreset,
     insertSnippet,
     insertCustomImageTag,
+    openInsertPalette,
+    closeInsertPalette,
+    renderInsertPalette,
+    setInsertCategory,
+    insertPaletteSnippet,
+    openCanvasExpand,
+    closeCanvasExpand,
+    downloadSkill,
     toggleModal,
     setZoom,
     switchMobileTab,
@@ -37,6 +45,12 @@ export function initEvents() {
             resetStylePreset,
             insertSnippet,
             insertCustomImageTag,
+            openInsertPalette,
+            closeInsertPalette,
+            insertPaletteSnippet,
+            openCanvasExpand,
+            closeCanvasExpand,
+            downloadSkill,
             toggleModal,
             setZoom,
             switchMobileTab,
@@ -54,6 +68,13 @@ export function initEvents() {
 
     // Delegated click handler for `[data-action]` elements
     document.addEventListener('click', (e) => {
+        // Clicking a rendered page opens the expanded canvas viewer.
+        const pageCanvas = e.target.closest('canvas.notebook-page-canvas');
+        if (pageCanvas && !pageCanvas.closest('#canvasExpandModal')) {
+            openCanvasExpand();
+            return;
+        }
+
         const btn = e.target.closest('[data-action]');
         if (!btn) return;
         const action = btn.getAttribute('data-action');
@@ -107,6 +128,27 @@ export function initEvents() {
             case 'insertCustomImage':
                 insertCustomImageTag();
                 break;
+            case 'openInsertPalette':
+                openInsertPalette();
+                break;
+            case 'closeInsertPalette':
+                closeInsertPalette();
+                break;
+            case 'insertPaletteItem':
+                insertPaletteSnippet(arg);
+                break;
+            case 'insertPaletteCategory':
+                setInsertCategory(arg);
+                break;
+            case 'expandCanvas':
+                openCanvasExpand();
+                break;
+            case 'closeExpandCanvas':
+                closeCanvasExpand();
+                break;
+            case 'downloadSkill':
+                downloadSkill();
+                break;
             case 'zoom':
                 setZoom(arg === 'reset' ? 'reset' : parseFloat(arg));
                 break;
@@ -129,6 +171,32 @@ export function initEvents() {
             scheduleRender();
         }
     });
+
+    // Insert palette search + modal dismissal
+    const insertSearch = document.getElementById('insertPaletteSearch');
+    if (insertSearch) {
+        insertSearch.addEventListener('input', renderInsertPalette);
+    }
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            closeInsertPalette();
+            closeCanvasExpand();
+        }
+    });
+
+    const insertModal = document.getElementById('insertPaletteModal');
+    if (insertModal) {
+        insertModal.addEventListener('click', (e) => {
+            if (e.target === insertModal) closeInsertPalette();
+        });
+    }
+    const expandModal = document.getElementById('canvasExpandModal');
+    if (expandModal) {
+        expandModal.addEventListener('click', (e) => {
+            if (e.target === expandModal) closeCanvasExpand();
+        });
+    }
 
     // File upload listeners
     const diagInput = document.getElementById('diagramUpload');
