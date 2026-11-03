@@ -38,6 +38,7 @@ export function getRenderOptions() {
         diagBowing: numVal('diagBowing', 0.60),
         singlePassStroke: boolVal('singlePassStroke', true),
         paperStyle: strVal('paperStyle', 'ruled_margin'),
+        pagePreset: strVal('pagePreset', 'a4'),
         camShadow: numVal('camShadow', 0.35),
         paperGrain: numVal('paperGrain', 0.40),
         pageTilt: numVal('pageTilt', 0.30),

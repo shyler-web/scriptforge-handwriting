@@ -33,9 +33,6 @@ function strToBytes(str) {
  * Each canvas is embedded as a high-quality DCTDecode (JPEG) XObject stream on an A4-proportioned page.
  */
 export function buildMultiPagePdfBlob(canvases) {
-    const pageW = 595.28; // A4 width in PDF points (72 dpi)
-    const pageH = 798.58; // Proportioned to 820x1100 notebook aspect ratio
-
     const chunks = [];
     let byteOffset = 0;
     const offsets = [0]; // 1-indexed PDF object byte offsets
@@ -80,6 +77,11 @@ export function buildMultiPagePdfBlob(canvases) {
 
         const jpegDataUrl = cv.toDataURL('image/jpeg', 0.94);
         const jpegBytes = dataUrlToUint8Array(jpegDataUrl);
+
+        // Match the PDF page aspect ratio to the active canvas preset.
+        const aspect = cv.width / Math.max(1, cv.height);
+        const pageH = aspect >= 1 ? 595.28 : 595.28 / aspect;
+        const pageW = aspect >= 1 ? 595.28 * aspect : 595.28;
 
         // Page Object
         offsets[pageObjId] = byteOffset;

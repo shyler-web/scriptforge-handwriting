@@ -120,6 +120,34 @@ export function drawPaperBackground(ctx, width, height, lineSpacing, topMargin, 
 }
 
 /**
+ * Draws subtle hand-ruled vertical column dividers for cheat-sheet page presets.
+ */
+export function drawColumnDividers(ctx, width, height, layout = {}, opts = {}, pageIndex = 0) {
+    const cols = Number(layout.cols || 1);
+    if (cols < 2) return;
+    const marginLeft = layout.marginLeft ?? 46;
+    const marginRight = layout.marginRight ?? 36;
+    const colGap = layout.colGap ?? 24;
+    const marginTop = layout.marginTop ?? 76;
+    const marginBottom = layout.marginBottom ?? 46;
+    const usable = width - marginLeft - marginRight;
+    const colW = (usable - (cols - 1) * colGap) / cols;
+
+    ctx.save();
+    ctx.strokeStyle = 'rgba(116, 169, 216, 0.34)';
+    ctx.lineWidth = 1.1;
+    ctx.setLineDash([7, 6]);
+    for (let i = 1; i < cols; i++) {
+        const x = marginLeft + i * (colW + colGap) - colGap * 0.5;
+        ctx.beginPath();
+        ctx.moveTo(x, marginTop - 22);
+        ctx.lineTo(x, height - marginBottom);
+        ctx.stroke();
+    }
+    ctx.restore();
+}
+
+/**
  * Applies 3D spine curvature gradient and overhead phone-camera vignette lighting.
  */
 export function applyCameraLightingAndSpine(ctx, width, height, opts = {}, pageIndex = 0) {
@@ -152,4 +180,4 @@ export function applyCameraLightingAndSpine(ctx, width, height, opts = {}, pageI
     }
 }
 
-export default { drawPaperBackground, applyCameraLightingAndSpine };
+export default { drawPaperBackground, drawColumnDividers, applyCameraLightingAndSpine };
