@@ -18,12 +18,12 @@ docs/internal/
 .zcode/
 skills-lock.json
 
-# Validation corpus: handwritten assignment scans carry personal identifiers and
+# Validation corpus: handwritten coursework scans carry personal identifiers and
 # the course syllabi are copyrighted. This repo is public, so keep them local.
-demo_assignments/
+local_coursework/
 
 # Generated knowledge-graph artifacts. graph.json embeds nodes extracted from
-# demo_assignments/, so it stays local with them.
+# local_coursework/, so it stays local with them.
 graphify-out/
 
 # Generated stress suite and internal design records. They remain on local disk

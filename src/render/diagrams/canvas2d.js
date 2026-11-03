@@ -22,7 +22,7 @@ import {
  * recursive-descent parser that recognises exactly one numeric variable (`x`),
  * two constants, and an explicit allowlist of `Math` functions. There is no
  * `eval`, no `new Function`, no property access, no indexing and no
- * assignment, so an expression can never reach the DOM or the window.
+ * binding, so an expression can never reach the DOM or the window.
  *
  * Grammar:
  *   expr    := term (('+' | '-') term)*

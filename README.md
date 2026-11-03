@@ -7,12 +7,12 @@ prose, 2D mathematics, tables, Karnaugh maps, logic schematics, automata, graphs
 raw SVG are compiled into vector ink strokes and exported as a multi-page PDF — entirely in
 the browser, with no build step, no cloud service and no API key.
 
-It is built for visual study guides, revision notebooks, engineering assignments and
+It is built for visual study guides, revision notebooks, engineering notes and
 accessible hand-written renditions of technical material.
 
 **Try it live:** [shyler-web.github.io/scriptforge-handwriting](https://shyler-web.github.io/scriptforge-handwriting/) — 100% offline, runs entirely in your browser. No account, no install, nothing leaves your device.
 
-![ScriptForge rendering a Digital Logic assignment](docs/screenshot.png)
+![ScriptForge rendering a Digital Logic study notes](docs/screenshot.png)
 
 ---
 
@@ -39,7 +39,7 @@ npm run dev
 # open http://localhost:8000
 ```
 
-The studio boots with a demo assignment. Edit the markup, switch presets, change ink and
+The studio boots with a demo notebook. Edit the markup, switch presets, change ink and
 paper, then use **Export PDF** or **PNG**.
 
 > The app uses native ES modules, so it must be served over HTTP. Any static server works:
