@@ -209,6 +209,34 @@
                 </div>
 
                 <div>
+                    <div class="flex items-center justify-between mb-1">
+                        <label class="text-xs text-slate-400">Style Preset</label>
+                        <button data-action="stylePresetReset" class="text-[10px] text-indigo-300 underline hover:text-indigo-200">Reset</button>
+                    </div>
+                    <div id="stylePresetBar" class="flex flex-wrap gap-2">
+                        <button data-action="stylePreset" data-arg="classic_blue" title="Classic Blue: natural blue ballpoint on ruled paper" class="style-preset-btn px-2 py-1 rounded-lg bg-slate-900 border border-slate-700 text-[10px] text-slate-200 transition flex items-center gap-2 hover:bg-slate-700">
+                            <span class="w-2 h-2 rounded-full" style="background:#1b3b8c"></span> Classic Blue
+                        </button>
+                        <button data-action="stylePreset" data-arg="engineering_grid" title="Engineering Grid: neat navy notes on quad paper" class="style-preset-btn px-2 py-1 rounded-lg bg-slate-900 border border-slate-700 text-[10px] text-slate-200 transition flex items-center gap-2 hover:bg-slate-700">
+                            <span class="w-2 h-2 rounded-full" style="background:#0f1e42"></span> Engineering
+                        </button>
+                        <button data-action="stylePreset" data-arg="pencil_draft" title="Pencil Draft: loose graphite study notes" class="style-preset-btn px-2 py-1 rounded-lg bg-slate-900 border border-slate-700 text-[10px] text-slate-200 transition flex items-center gap-2 hover:bg-slate-700">
+                            <span class="w-2 h-2 rounded-full" style="background:#4a4e54"></span> Pencil Draft
+                        </button>
+                        <button data-action="stylePreset" data-arg="cornell_focus" title="Cornell Focus: black gel on Cornell paper" class="style-preset-btn px-2 py-1 rounded-lg bg-slate-900 border border-slate-700 text-[10px] text-slate-200 transition flex items-center gap-2 hover:bg-slate-700">
+                            <span class="w-2 h-2 rounded-full" style="background:#1e2024"></span> Cornell
+                        </button>
+                        <button data-action="stylePreset" data-arg="red_pen_notes" title="Red Pen: high-contrast block print for corrections" class="style-preset-btn px-2 py-1 rounded-lg bg-slate-900 border border-slate-700 text-[10px] text-slate-200 transition flex items-center gap-2 hover:bg-slate-700">
+                            <span class="w-2 h-2 rounded-full" style="background:#8f1d2c"></span> Red Pen
+                        </button>
+                        <button data-action="stylePreset" data-arg="clean_print" title="Clean Print: minimal, highly legible notes" class="style-preset-btn px-2 py-1 rounded-lg bg-slate-900 border border-slate-700 text-[10px] text-slate-200 transition flex items-center gap-2 hover:bg-slate-700">
+                            <span class="w-2 h-2 rounded-full" style="background:#181a1f"></span> Clean Print
+                        </button>
+                    </div>
+                    <p id="stylePresetHint" class="text-[10px] text-slate-500 mt-2 leading-normal">Choose a starting look, then fine-tune every slider below.</p>
+                </div>
+
+                <div>
                     <label class="text-xs text-slate-400 block mb-1">Base Skeleton Archetype</label>
                     <select id="fontArchetype" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
                         <option value="Caveat">Fast Cursive-Print Hybrid (Caveat)</option>

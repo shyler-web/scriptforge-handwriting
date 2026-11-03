@@ -8,6 +8,6 @@ Maintain security do not look at the api key or any secrets if u need help like 
 if there is requirement to be done by argon pending tell me i will ask it to generate 
 
 keeep commiting and pushing to github maintaining security
-some demo assignments r there in the demo_assignment folder for validatino
+some local coursework PDFs are in the local_coursework folder for validation
 
 
