@@ -19,6 +19,7 @@ const CONTENT_TYPES = {
     '.mjs': 'text/javascript; charset=utf-8',
     '.css': 'text/css; charset=utf-8',
     '.json': 'application/json; charset=utf-8',
+    '.md': 'text/markdown; charset=utf-8',
     '.png': 'image/png',
     '.jpg': 'image/jpeg',
     '.jpeg': 'image/jpeg',
@@ -40,9 +41,10 @@ createServer(async (req, res) => {
         }
 
         const body = await readFile(target);
+        const isNoteAsset = relative === 'notes' || relative.startsWith('notes/') || relative.startsWith('notes\\');
         res.writeHead(200, {
             'Content-Type': CONTENT_TYPES[extname(target).toLowerCase()] || 'application/octet-stream',
-            'Cache-Control': 'no-cache'
+            'Cache-Control': isNoteAsset ? 'no-store' : 'no-cache'
         });
         res.end(body);
     } catch {

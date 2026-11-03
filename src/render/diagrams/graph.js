@@ -81,7 +81,12 @@ export function parseGraphSpec(params = {}) {
     const nodes = [];
     const seenIds = new Set();
 
-    const sides = rawNodes.includes('|') ? rawNodes.split('|') : [rawNodes];
+    // The dispatcher splits a whole spec on `|`, so a bipartition must use the
+    // separate left=/right= parameters. The nodes=|nodes form is kept for
+    // direct parseGraphSpec callers that bypass the dispatcher.
+    const sides = (params.left !== undefined || params.right !== undefined)
+        ? [params.left || '', params.right || '']
+        : (rawNodes.includes('|') ? rawNodes.split('|') : [rawNodes]);
     for (const side of sides) {
         const ids = [];
         for (const entry of splitList(side)) {

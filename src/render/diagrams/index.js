@@ -11,6 +11,7 @@ import { renderUniversalSchematic } from './schematic.js';
 import { renderCanvas2D } from './canvas2d.js';
 import { renderSvgDiagram } from './svgAdapter.js';
 import * as customImgMod from './customImage.js';
+import { renderGraphDiagram } from './graph.js';
 
 function resolveInkAndSeed(opts, charCounterRef) {
     const stateObj = stateMod.state || stateMod.default || stateMod;
@@ -87,6 +88,8 @@ export function renderHandSketchedDiagram(ctx, rc, specStr, startX, startY, avai
             usedHeight = renderUniversalSchematic(ctx, rc, params, startX, startY, clampedWidth, counter, opts, ink, roughOpts);
         } else if (diagType === 'plot' || diagType === 'canvas2d' || diagType === 'geometry' || diagType === 'target' || diagType === 'vectors') {
             usedHeight = renderCanvas2D(ctx, rc, params, startX, startY, clampedWidth, counter, opts, ink, roughOpts);
+        } else if (diagType === 'graph') {
+            usedHeight = renderGraphDiagram(ctx, rc, params, startX, startY, clampedWidth, counter, opts, ink, roughOpts);
         } else if (diagType === 'custom_image' || diagType === 'image') {
             const imgFn = customImgMod.renderCustomImage || customImgMod.drawCustomImage || customImgMod.default;
             if (typeof imgFn === 'function') {

@@ -3,10 +3,14 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "ScriptForge — Dynamic Stroke, 2D Math & Hand-Drawn Diagram Engine",
+  "description": "ScriptForge \u2014 Offline Declarative Sketchnote, 2D Math & Engineering Diagram Compiler with MCP Server for AI Coding Agents",
   "scripts": {
     "dev": "node scripts/serve.mjs",
-    "start": "node scripts/serve.mjs"
+    "start": "node scripts/serve.mjs",
+    "mcp": "node mcp/server.mjs",
+    "notes": "node scripts/notes-cli.mjs",
+    "notes:index": "node scripts/build-notes-index.mjs",
+    "verify:notes": "node scripts/verify-notes.mjs && node scripts/verify-mcp.mjs"
   },
   "engines": {
     "node": ">=18"

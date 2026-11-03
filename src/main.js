@@ -4,6 +4,7 @@
 
 import { PRESETS } from './data/presets.js';
 import { initEvents } from './ui/events.js';
+import { initNotes } from './ui/notes.js';
 import { renderFullPage } from './render/page.js';
 
 function bootScriptForge() {
@@ -15,6 +16,7 @@ function bootScriptForge() {
     }
 
     initEvents();
+    initNotes().catch((err) => console.warn('[ScriptForge] notes library unavailable:', err.message));
 
     if (document.fonts && document.fonts.ready) {
         document.fonts.ready.then(() => {
