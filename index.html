@@ -56,9 +56,6 @@
                     <button data-action="preset" data-arg="cs_dfa" class="px-2.5 py-1 rounded-md hover:bg-slate-700 text-slate-200 transition font-medium">
                         PCS Pipeline & DFA
                     </button>
-                    <button data-action="preset" data-arg="stress_turbo" class="px-2.5 py-1 rounded-md hover:bg-amber-700/60 bg-amber-800/40 text-amber-200 transition font-semibold border border-amber-700/60">
-                        &#9889; Turbo Stress
-                    </button>
                 </div>
 
                 <label class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-800/40 hover:bg-emerald-700/60 text-emerald-200 border border-emerald-700/60 text-xs font-semibold transition cursor-pointer" title="Load your own .txt notes file into the editor">
@@ -68,7 +65,7 @@
 
                 <button data-action="modal" data-arg="vlmModal" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-medium transition">
                     <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-400"></i>
-                    <span>Image / VLM Parser</span>
+                    <span>Image Tracer</span>
                 </button>
 
                 <button id="inspectBtn" data-action="inspect" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-medium transition" title="Highlight unique allographic bounding boxes & stroke vectors">
@@ -106,6 +103,20 @@
                     <h2 class="text-sm font-semibold text-white">Document Markup & Universal Blocks</h2>
                 </div>
                 <span id="charStats" class="text-[11px] mono text-slate-400">0 glyphs • 1 page</span>
+            </div>
+
+            <!-- Notes Library: public notes + local private notes written by an MCP agent -->
+            <div class="bg-slate-950/70 border border-slate-800/90 rounded-xl px-2 py-2">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="book-open" class="w-4 h-4 text-emerald-400 shrink-0"></i>
+                    <select id="notesSelect" class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-indigo-500">
+                        <option value="">Loading notes…</option>
+                    </select>
+                    <button id="reloadNoteBtn" class="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-[11px] font-medium transition" title="Reload the selected note from disk">
+                        Reload
+                    </button>
+                </div>
+                <div id="notesStatus" class="hidden mt-2 text-[11px] text-slate-400"></div>
             </div>
 
             <!-- Quick Insert Snippet Bar -->

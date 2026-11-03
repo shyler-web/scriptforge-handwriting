@@ -18,6 +18,7 @@ import { parseLatexToAST } from './math/parser.js';
 import { measureMathAST } from './math/measure.js';
 import { renderMathAST } from './math/renderer.js';
 import { renderHandSketchedDiagram, parseDiagramSpec } from './diagrams/index.js';
+import { estimateGraphHeight } from './diagrams/graph.js';
 
 function getNoiseEngine() {
     return noiseMod.noise || noiseMod.default || {
@@ -48,6 +49,7 @@ function estimateDiagramHeight(specStr, lineSpacing = 34) {
         return Math.max(96, (rows + 1) * 34 + 28);
     }
     if (diagType === 'tree') return 180;
+    if (diagType === 'graph') return estimateGraphHeight(params);
     if (diagType === 'list' || params.list) return 76;
     if (diagType === 'svg') return (parseFloat(params.height) || 195) + 24;
     if (diagType === 'schematic' || diagType === 'circuit' || diagType === 'flipflop' || diagType === 'dfa') return 200;

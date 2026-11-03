@@ -1,10 +1,7 @@
 /**
  * ScriptForge Multi-Page Demo Assignment Presets (`src/data/presets.js` - Wave 5)
  * Complete, multi-page handwritten solutions for the validation assignments in `demo_assignment/`.
- * `stress_turbo` is the generated Ultra Turbo Stress Suite (scripts/gen-stress-suite.mjs).
  */
-
-import { STRESS_DOC } from './stressDoc.js';
 
 export const PRESETS = {
     ee_kmap: `# Digital Logic & Sequential Circuits — Assignment
@@ -84,9 +81,7 @@ Q7. Minimal DFA Accepting Binary Strings Ending with Substring "01":
 [DIAGRAM: dfa | states=q0,q1,q2 | accept=q2 | edges=q0->q1:0,q1->q2:1,q0->q0:1,q1->q1:0,q2->q1:0]
 
 Q8. System Component Specification & Functional Role Summary:
-[DIAGRAM: grid | cols=Component,Specification,System Role | rows=CPU~8-Core 4.2 GHz~Instruction fetch decode and ALU execution;RAM~16 GB DDR5~Volatile working store for active programs;SSD~1 TB NVMe~Non-volatile block storage for OS and files;GPU~12 GB VRAM~Parallel SIMD shader and matrix compute]`,
-
-    stress_turbo: STRESS_DOC
+[DIAGRAM: grid | cols=Component,Specification,System Role | rows=CPU~8-Core 4.2 GHz~Instruction fetch decode and ALU execution;RAM~16 GB DDR5~Volatile working store for active programs;SSD~1 TB NVMe~Non-volatile block storage for OS and files;GPU~12 GB VRAM~Parallel SIMD shader and matrix compute]`
 };
 
 export default PRESETS;

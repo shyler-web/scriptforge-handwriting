@@ -1,217 +1,312 @@
-# ScriptForge Studio
+# ScriptForge
 
-Dynamic stroke, 2D math and hand-drawn diagram engine. Turns a plain-text document into a
-hand-written notebook page rendered as vectors — with every glyph uniquely perturbed, so no two
-letters on the page are ever identical.
+**Offline Declarative Sketchnote, 2D Math & Engineering Diagram Compiler (with MCP Server for AI Coding Agents).**
 
-**▶ Try it live:** [shyler-web.github.io/scriptforge-handwriting](https://shyler-web.github.io/scriptforge-handwriting/) — 100% offline, runs entirely in your browser. No account, no install, nothing leaves your device.
+ScriptForge turns a small declarative document language into hand-written notebook pages:
+prose, 2D mathematics, tables, Karnaugh maps, logic schematics, automata, graphs, plots and
+raw SVG are compiled into vector ink strokes and exported as a multi-page PDF — entirely in
+the browser, with no build step, no cloud service and no API key.
 
-![ScriptForge Studio rendering a Digital Logic assignment](docs/screenshot.png)
+It is built for visual study guides, revision notebooks, engineering assignments and
+accessible hand-written renditions of technical material.
+
+**Try it live:** [shyler-web.github.io/scriptforge-handwriting](https://shyler-web.github.io/scriptforge-handwriting/) — 100% offline, runs entirely in your browser. No account, no install, nothing leaves your device.
+
+![ScriptForge rendering a Digital Logic assignment](docs/screenshot.png)
+
+---
+
+## Why ScriptForge
+
+- **Offline by design** — rendering, pagination, PDF compilation, image tracing and note
+  validation all run locally. Only the cosmetic Lucide icon CDN is optional.
+- **Declarative, not hand-drawn** — an agent or a human writes compact markup; the engine
+  produces the handwriting, diagrams and page layout.
+- **Agent-readable grammar** — an MCP server exposes note tools, a strict DSL validator and
+  an authoring guide, so coding agents can create or correct notes without guessing.
+- **Deterministic** — a seed reproduces the same page; different seeds resample every glyph
+  and diagram tremor.
+- **Printable** — every page compiles into a genuine multi-page PDF 1.4 file client-side.
+
+---
+
+## Quick start
+
+Requires Node.js 18 or newer. There are no runtime dependencies to install.
+
+```bash
+npm run dev
+# open http://localhost:8000
+```
+
+The studio boots with a demo assignment. Edit the markup, switch presets, change ink and
+paper, then use **Export PDF** or **PNG**.
+
+> The app uses native ES modules, so it must be served over HTTP. Any static server works:
+> `python3 -m http.server 8000`, `npx serve .`, or the bundled `scripts/serve.mjs`.
+
+---
+
+## MCP server for AI coding agents
+
+ScriptForge ships a zero-dependency MCP server over stdio. The agent supplies the model;
+ScriptForge supplies storage, validation and rendering. No API keys and no network calls
+are involved in the MCP path.
+
+### Configure a client
+
+**opencode** (`opencode.json` or project config):
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "scriptforge": {
+      "type": "local",
+      "command": ["node", "/absolute/path/to/ScriptForge/mcp/server.mjs"],
+      "enabled": true
+    }
+  }
+}
+```
+
+**Claude Desktop** (`claude_desktop_config.json`) and most other MCP clients:
+
+```json
+{
+  "mcpServers": {
+    "scriptforge": {
+      "command": "node",
+      "args": ["/absolute/path/to/ScriptForge/mcp/server.mjs"]
+    }
+  }
+}
+```
+
+Then ask the agent to use the `scriptforge` server, for example:
+
+> Call `get_authoring_guide`, then create a public note `dsa/graphs/traversal` with a short
+> explanation of BFS, one graph diagram and the complexity equation. Validate it before finishing.
+
+### Tools
+
+| Tool | Purpose |
+|---|---|
+| `get_authoring_guide` | Returns the full grammar, frontmatter keys and diagram types. |
+| `list_notes` | Lists public or private notes with title, tags, path and timestamp. |
+| `read_note` | Returns raw content, frontmatter and body for a slug. |
+| `create_note` | Creates a validated note; optional `overwrite`. |
+| `update_note` | Replaces an existing note with validated content. |
+| `append_to_note` | Appends a validated section to an existing note. |
+| `delete_note` | Deletes a note; requires `confirm: true`. |
+| `validate_note` | Validates raw content or an existing slug with line-numbered errors and examples. |
+
+Tool descriptions instruct agents to call `get_authoring_guide` before writing. Validation
+failures return line numbers and a minimal syntax example so the agent can self-correct.
+
+### Public and private notes
+
+| Scope | Storage | Index | Git |
+|---|---|---|---|
+| `public` (default) | `notes/<slug>.md` | `notes/index.json` | tracked |
+| `private` | `notes/private/<slug>.md` | `notes/private/index.json` | ignored |
+
+A slug beginning with `private/` selects private scope automatically. Private metadata is
+never written into the tracked public index.
+
+### Browse and live-reload notes
+
+Open a note directly in the studio:
+
+```text
+http://localhost:8000/?note=dsa/graphs/traversal
+http://localhost:8000/?note=private/scratch
+```
+
+The **Notes** dropdown merges public and private indexes and labels private entries with
+`[Private]`. Note requests are served with `Cache-Control: no-store`; when the page is opened
+with `?note=<slug>`, ScriptForge polls for agent writes and offers **Reload** if the editor
+has local edits.
+
+### CLI fallback
+
+For agents that do not speak MCP:
+
+```bash
+npm run notes -- list --scope public
+npm run notes -- read dsa/graphs
+npm run notes -- create dsa/trees --title "Trees" --tags dsa,trees --file section.md
+npm run notes -- validate --file section.md
+npm run notes -- index
+```
+
+Content can also be piped on stdin. A slug beginning with `private/` selects private scope.
+
+---
+
+## Note format
+
+Notes are plain text with optional frontmatter:
+
+```markdown
+---
+title: Graph Theory Revision
+tags: dsa, graphs, exam
+font: Kalam
+ink: ballpoint_blue
+paper: ruled_margin
+seed: 4219
+---
+
+# Graph Theory
+
+A graph $G = (V, E)$ has degree sum:
+
+$$ \sum_{v \in V} \deg(v) = 2|E| $$
+
+[DIAGRAM: graph | nodes=A,B,C,D | edges=A-B,B-C,C-D,D-A,A-C | layout=auto]
+```
+
+Supported `font`, `ink` and `paper` values are listed in the
+[authoring guide](docs/notes-authoring.md), together with every diagram type and the exact
+LaTeX allowlist.
+
+The renderer enforces a few hard rules: display math must be single-line `$$ ... $$`, a
+diagram block must be alone on its line, inline `$` must be closed, and unsupported LaTeX
+commands are rejected rather than silently swallowed.
+
+---
 
 ## Features
 
-- **Allographic glyph engine** — every character is sliced into micro-strips and warped with
-  continuous Perlin noise, affine shear and pressure-modulated ink, so a page of `a` and `e`
-  never looks like a font. Each character also selects from a bank of distinct structural
-  allographs (`A0..A3`) so that two adjacent identical characters are never the same drawing,
-  and ink width/opacity follow a per-stroke velocity profile rather than a static constant.
-- **2D spatial LaTeX** — a real parser and renderer for fractions, integrals and sums with
-  limits, radicals, matrices, overbars, sub- and superscripts, drawn as strokes rather than
-  typeset.
-- **Hand-sketched diagram engine** — Karnaugh maps with implicant loops, IEEE logic-gate
-  schematics, DFA state graphs, damped-response plots.
-- **Image → hand-traced vector** — upload any printed diagram and it is thresholded, traced into
-  contours and re-drawn with pen tremor.
-- **Paper and camera realism** — ruled / quad-grid / Cornell stationery, fibre grain, spine
-  curvature, phone-camera shadow and vignette.
-- **Multi-page flow** — long documents paginate automatically across `Page 1..N` canvases.
-  Diagrams and display equations are never sliced at a page break, and every page gets its own
-  deterministic offset seed so grain, margin drift and vignettes differ page to page.
-- **Client-side PDF export** — `Export PDF` compiles every rendered page into a genuine
-  multi-page PDF (PDF 1.4, one JPEG XObject per page) in the browser, with no server and no
-  PDF library.
-- **Responsive studio** — below 1024 px the editor, page preview and ink/physics panels become
-  three switchable tabs, so the same build works on a 375 px phone.
+- **Allographic handwriting engine** — every character is warped with continuous noise,
+  affine shear and pressure-modulated ink; adjacent identical characters draw different
+  structural allographs.
+- **2D mathematics** — fractions, radicals, matrices, cases, integrals, sums with limits,
+  delimiters and accents, laid out as strokes rather than typeset glyphs.
+- **Diagram compilers** — tables, bitfields, Karnaugh maps, logic and flip-flop schematics,
+  DFAs, trees, linked lists, general graphs (layered/circular/bipartite/tree/Hasse), function
+  plots, geometry and re-inked raw SVG.
+- **Paper and camera realism** — ruled, quad-grid, Cornell and blank stationery, fibre grain,
+  spine curvature, phone-camera shadow and vignette.
+- **Multi-page flow** — automatic pagination that never slices a display equation or a
+  diagram; deterministic per-page variation.
+- **Client-side PDF export** — PDF 1.4 with one JPEG XObject per page, no server and no PDF
+  library.
+- **Responsive studio** — editor, notebook pages and ink/physics controls become tabs below
+  1024 px.
+- **Notes library + MCP** — agent-writable notes with validation, public/private scopes and
+  live reload.
 
-## Running it
-
-The app uses native ES modules, so browsers will not load it from a `file://` path. Serve the
-folder over HTTP:
-
-```bash
-npm run dev        # http://localhost:8000
-```
-
-No dependencies to install — `npm run dev` uses the bundled zero-dependency static server in
-`scripts/serve.mjs`. Any other static server works too:
-
-```bash
-python3 -m http.server 8000
-npx serve .
-```
-
-> **Network is optional.** Rough.js is vendored at `assets/vendor/rough.js`, Tailwind is
-> compiled ahead of time into `assets/styles/tailwind.css`, and the handwriting webfonts are
-> self-hosted under `assets/fonts/`. Layout, sketching and handwriting all work fully offline.
-> Only the Lucide icon set is still fetched from a CDN; without it the icons simply disappear
-> and every button keeps working through its text label.
->
-> **Editing Tailwind classes?** `assets/styles/tailwind.css` is generated, not hand-edited.
-> After adding or removing a utility class in `index.html` or `src/`, regenerate it:
->
-> ```bash
-> node scripts/build-tailwind.mjs
-> ```
+---
 
 ## Document markup
 
-The editor accepts plain prose plus a small markup language:
-
 | Syntax | Renders as |
 |---|---|
-| `# Heading` | Larger, hand-underlined heading |
-| `$$ ... $$` | Display 2D math on its own lines |
-| `$ ... $` | Inline 2D math inside a sentence |
-| `[DIAGRAM: grid \| cols=A,B \| rows=1~2,3~4]` | A hand-ruled table |
-| `[DIAGRAM: bitfield \| bits=32 \| fields=Op:6,R1:4,Unused:22]` | A segmented register strip |
-| `[DIAGRAM: kmap \| vars=A,B,C,D \| ones=0,2,5,7]` | A Karnaugh map with those minterms set |
-| `[DIAGRAM: circuit \| nodes=... \| edges=...]` | A logic-gate schematic |
-| `[DIAGRAM: dfa \| states=q0,q1 \| transitions=...]` | A state automaton |
-| `[DIAGRAM: tree \| nodes=... \| edges=...]` | A binary tree |
-| `[DIAGRAM: plot \| label=Response]` | A damped-response function plot |
-| `[DIAGRAM: canvas2d \| fn=4*x^3 \| domain=0,1 \| shade=0.33,0.67]` | A function plot with a hachure-shaded region |
-| `[DIAGRAM: canvas2d \| circles=0.58:4pts,1.0:3pts]` | Concentric target rings with radial callouts |
-| `[DIAGRAM: svg \| <svg viewBox="0 0 200 120">...</svg>]` | Any raw SVG, re-inked by hand |
-| `[DIAGRAM: custom_image]` | A 1px skeleton trace of an uploaded image |
-| `~~wrong term~~` | A multi-pass pen scratch-out |
-| `---PAGE---` | A forced page break (the flow also breaks pages automatically) |
+| `# Heading` … `###### Heading` | Larger hand-underlined heading |
+| `$ ... $` | Inline 2D math |
+| `$$ ... $$` | Single-line display 2D math |
+| `[DIAGRAM: grid \| cols=A,B \| rows=1~2,3~4]` | Hand-ruled table |
+| `[DIAGRAM: bitfield \| bits=32 \| fields=Op:6,R1:4,Unused:22]` | Segmented register strip |
+| `[DIAGRAM: kmap \| vars=A,B,C,D \| ones=0,2,5,7]` | Karnaugh map |
+| `[DIAGRAM: circuit \| expr=(A AND B) OR C]` | Logic-gate schematic |
+| `[DIAGRAM: dfa \| states=q0,q1 \| accept=q1 \| edges=q0->q1:0]` | State automaton |
+| `[DIAGRAM: tree \| nodes=50,30,70 \| edges=50-30,50-70]` | Binary tree |
+| `[DIAGRAM: graph \| nodes=A,B,C \| edges=A-B,B-C]` | General graph |
+| `[DIAGRAM: canvas2d \| fn=4*x^3 \| domain=0,1]` | Function plot |
+| `[DIAGRAM: svg \| <svg ...>...</svg>]` | Any SVG, re-inked by hand |
+| `~~wrong term~~` | Pen scratch-out |
+| `---PAGE---` | Forced page break |
 
-`fn=` accepts a small expression language — numbers, `x`, `pi`, `e`, the operators
-`+ - * / % ^`, parentheses, implicit products like `2x`, and an allowlist of
-functions (`sin`, `cos`, `tan`, `asin`, `acos`, `atan`, `atan2`, `exp`, `ln`, `log`,
-`sqrt`, `cbrt`, `abs`, `sign`, `floor`, `ceil`, `round`, `pow`, `min`, `max`, `hypot`).
-It is parsed by a dedicated whitelist parser, never by `eval` or `new Function`, so an
-expression cannot reach the DOM or the window.
+See [`docs/notes-authoring.md`](docs/notes-authoring.md) for the complete grammar.
 
-## Module map
+---
 
-```
-index.html                  Shell markup. Controls declare intent via data-action / data-arg.
-assets/styles/app.css       Extracted stylesheet (project overrides).
-assets/styles/tailwind.css  Generated Tailwind bundle. Rebuild with scripts/build-tailwind.mjs.
-assets/vendor/rough.js      Vendored Rough.js 4.6.6 (MIT) — the sketching dependency.
-assets/fonts/               Self-hosted handwriting webfonts (WOFF2, OFL 1.1).
-assets/styles/fonts.css     @font-face rules for the self-hosted fonts.
-docs/screenshot.png         Rendered sample page.
-scripts/serve.mjs           Zero-dependency static dev server.
-scripts/build-tailwind.mjs  Offline Tailwind compiler for assets/styles/tailwind.css.
-scripts/verify-waves.mjs    Headless exit-criteria verifier (35 checks) - run with `node scripts/verify-waves.mjs`.
-scripts/qa/harness.mjs      Headless-Chrome QA driver: runs an assertion module against :8000.
-scripts/qa/*.assertions.js  Per-wave assertion suites (wave1 / wave2 / wave3 / mobile).
+## Architecture
+
+```text
+index.html                  Studio shell; controls use data-action / data-arg.
+notes/                      Public notes and generated index.json.
+shared/note-format.mjs      Frontmatter parsing and title/slug rules (browser + Node).
+mcp/
+  server.mjs                MCP stdio transport (newline JSON-RPC + Content-Length).
+  tools.mjs                 Tool definitions and handlers.
+  notes-store.mjs           Path-jailed CRUD, atomic writes, scope-aware indexes.
+  note-schema.mjs           DSL validator grounded in the real renderers.
 src/
-  main.js                   Entry point: boots the studio on window load.
-  core/
-    config.js               Canvas geometry, line pitch, HiDPI factor, ink palettes, allograph archetypes.
-    noise.js                Deterministic Perlin/value noise engine.
-    state.js                The single mutable state store (seed, ink, inspector, contours, pages).
-    options.js              Reads the live control-panel values into the render options.
-  data/
-    presets.js              The three multi-page demo documents.
-  render/
-    glyph.js                Allographic glyph bank + velocity ink physics (the zero-clone engine).
-    math/
-      parser.js             LaTeX -> recursive 2D box AST (supsub, frac, binom, sqrt,
-                            accent, bigop, delim, matrix).
-      measure.js            AST bounding-box measurement + ruled-line snap invariant.
-      renderer.js           AST -> hand-drawn strokes, stretchy delimiters.
-    diagrams/
-      index.js              Dispatcher: parses the spec, builds the ink style, routes by type.
-      primitives.js         Rounded rects, arrows, curly braces, hachure, logic gates.
-      grid.js               Universal grid engine: tables, bitfields, K-maps, array strips.
-      schematic.js          Universal schematic engine: circuits, automata, trees, lists.
-      canvas2d.js           Universal plot/geometry engine: f(x), shaded regions, targets.
-      svgAdapter.js         Universal SVG adapter: any <svg> re-inked as pen strokes.
-      kmap.js               Legacy alias -> grid.js.
-      circuit.js            Legacy alias -> schematic.js.
-      dfa.js                Legacy alias -> schematic.js.
-      plot.js               Function plot with damping envelope.
-      customImage.js        Vectorized uploaded-image contours.
-    paper.js                Stationery background, spine shadow, camera lighting.
-    page.js                 Multi-page compositor — lays the document out across Page 1..N.
-    pdfExport.js            Zero-dependency multi-page PDF 1.4 writer + PNG export.
-  pipeline/
-    vectorize.js            Image -> Zhang-Suen 1px skeleton -> Douglas-Peucker polylines.
-  ui/
-    controls.js             The actions the interface can trigger.
-    events.js               Delegated data-action wiring.
-    vlm.js                  Optional vision-language document parser.
+  main.js                   Studio boot and notes-library initialization.
+  core/                     Config, noise, state, render options.
+  render/                   Glyph bank, paper, pagination, PDF, math and diagrams.
+  ui/                       Event router, controls, notes library, offline image tracer.
+scripts/
+  serve.mjs                 Zero-dependency static server (no-store for /notes/).
+  notes-cli.mjs             MCP-free note operations.
+  build-notes-index.mjs     Regenerates the public and private indexes.
+  verify-notes.mjs          Note-format, validator and store tests.
+  verify-mcp.mjs            End-to-end MCP stdio smoke test.
+  verify-waves.mjs          Renderer and security exit-criteria checks.
+  qa/                       Headless-Chrome assertion suites.
+assets/                     Self-hosted fonts, compiled Tailwind, vendored Rough.js.
+docs/                       Screenshot, authoring guide and design records.
 ```
 
-## Adding a feature
-
-- **A new control** — add `data-action="..."` to the element in `index.html`, then add an entry
-  to the matching map in `src/ui/events.js` (`CLICK_ACTIONS`, `CHANGE_ACTIONS` or
-  `INPUT_ACTIONS`) and the action function in `src/ui/controls.js`. Sliders use
-  `data-arg="<input id>"` plus an optional `data-suffix` for the readout (`slantAngle` uses `°`).
-- **A new diagram type** — write `src/render/diagrams/<type>.js` exporting `draw<Name>(d)` and
-  return the vertical space consumed, then register it in `src/render/diagrams/index.js`. The `d`
-  context object is documented at the top of that file.
-- **A new math primitive** — add a node type in `src/render/math/parser.js`, a measurement rule
-  in `measure.js`, and a render rule in `renderer.js`.
-- **New render state** — add it to `src/core/state.js`. Do not reintroduce page-level globals;
-  they are what made the original single file hard to extend.
+---
 
 ## Verification
 
-Two independent verifiers, neither of which needs a network connection.
+```bash
+npm run verify:notes          # note store, validator, MCP transport and indexes
+node scripts/verify-waves.mjs # renderer, math, diagram and secret-leak checks
+```
+
+Browser QA requires the dev server:
 
 ```bash
-node scripts/verify-waves.mjs            # 35 headless exit-criteria checks, exit 0 = all pass
-node scripts/qa/harness.mjs scripts/qa/wave1.assertions.js   # needs `npm run dev` running
+npm run dev
+node scripts/qa/harness.mjs scripts/qa/wave1.assertions.js
 node scripts/qa/harness.mjs scripts/qa/wave2.assertions.js
 node scripts/qa/harness.mjs scripts/qa/wave3.assertions.js
 node scripts/qa/harness.mjs scripts/qa/mobile.assertions.js
 ```
 
-`verify-waves.mjs` imports the project modules in plain Node and checks the math AST, the
-five diagram grammars, the safe math evaluator, the SVG path flattener, the Zhang-Suen
-skeletonizer, the RDP simplifier, the allograph anti-clone rule, the velocity profile and a
-secret-leak sweep.
+If you change Tailwind utility classes, regenerate the stylesheet:
 
-The `scripts/qa/` harness drives headless Chrome over the DevTools Protocol against
-`http://localhost:8000`, runs an assertion module inside the page, and reports every console
-error, uncaught exception and failed request. It exits non-zero when an assertion fails, so
-it doubles as a CI gate.
+```bash
+node scripts/build-tailwind.mjs
+```
+
+---
+
+## Security and privacy
+
+- The MCP server has no network access, no shell access and no credentials. It reads and
+  writes only inside `notes/`; path traversal and absolute paths are rejected.
+- Writes are limited to 256 KB, validated before they land, and performed atomically.
+- `delete_note` requires `confirm: true`.
+- `notes/private/` and its index are git-ignored. Personal PDFs, notebooks, archives and
+  internal planning material are ignored too.
+- Image parsing is fully offline (1px Zhang-Suen centerline tracing). No API key is read or
+  stored. Lucide icons load from a CDN and fail gracefully offline.
+
+---
 
 ## Known limitations
 
-- **Multi-page is implemented, but pagination is coarse.** `src/render/page.js` flows the
-  document across `Page 1..N` canvases inside `#pagesContainer` and `src/render/pdfExport.js`
-  compiles them into a real multi-page PDF. The block-height estimate that decides where to
-  break is an upper bound, so a page can end early rather than clip; display equations are kept
-  whole, but a long inline `$...$` that would straddle a break is moved down a line rather than
-  split across two pages.
-- **Wave 2 engines are landed.** `canvas2d.js` and `svgAdapter.js` exist and route correctly.
-  Two caveats remain: `fn=` only understands the whitelisted expression language above (not a
-  general-purpose parser), and `src/render/diagrams/plot.js` is now a thin alias onto
-  `canvas2d.js`, so the old hardcoded damped sine is only reachable through the `damped_sine`
-  preset.
-- **The glyph bank now has distinct structural allographs.** `src/render/glyph.js` picks one of
-  `A0..A3` per character instance and drives ink from a real velocity profile, so adjacent
-  identical characters are never the same drawing. The remaining gap is that the Proof of
-  Zero-Clone inspector still visualises only the slant delta (`Δθ`), not the warp seed, the
-  scale matrix or the ligature links.
-- **Diagram parameters are only partly honoured.** `vars=`, `expr=`, `states=`, `accept=` and
-  `fn=` are parsed into the diagram context but the renderers still draw default geometry.
-- The DFA renderer's return arcs from the accepting state are drawn as smooth curves but are not
-  yet annotated with their transition labels.
-- The optional Gemini key in the VLM modal is read from the DOM and sent directly to Google's
-  API from the browser. It is never stored or committed, and the app works fully offline
-  without it.
+- Pagination uses an upper-bound block estimate, so a page can end slightly early rather
+  than clip content.
+- Not every diagram parameter is honoured by every legacy alias; the universal engines
+  (`grid`, `schematic`, `canvas2d`, `graph`, `svg`) have the widest coverage.
+- DFA return-arc transition labels are drawn as curves but are not yet annotated.
+- The zero-clone inspector currently visualises the slant delta only.
+- The browser reader is read-only. Agents write notes through MCP or the CLI; the studio
+  loads them and can export the rendered result.
+
+---
 
 ## Provenance
 
-This project was split out of a single 2090-line monolithic HTML file. The split was verified
-pixel-identical against the original: the rendered canvas bytes, ten interactive control
-behaviours, and the full image-to-diagram pipeline all match exactly. The original file remains
-in the git history in the first commit.
+ScriptForge was split out of a single 2090-line HTML file. The split was verified
+pixel-identical against the original: rendered canvas bytes, interactive control behaviour
+and the image-to-diagram pipeline all match. Vendored assets retain their original licences;
+see `assets/vendor/rough.LICENSE`, `assets/fonts/OFL.txt` and `assets/fonts/NOTICE.md`.

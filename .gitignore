@@ -4,11 +4,18 @@ dist/
 .DS_Store
 .env
 .env.*
+
+# Private notes written by an MCP agent. Public notes stay in notes/*.md and
+# are indexed by the tracked notes/index.json.
+notes/private/
+
+# Personal scratch corpus, marketing queues and internal planning material.
 outbox/
+marketing/
 marketing_queue.json
+stress/
 docs/internal/
 .zcode/
-marketing/
 skills-lock.json
 
 # Validation corpus: handwritten assignment scans carry personal identifiers and
@@ -19,6 +26,14 @@ demo_assignments/
 # demo_assignments/, so it stays local with them.
 graphify-out/
 
+# Generated stress suite and internal design records. They remain on local disk
+# but are not part of the public app, so they are untracked here.
+docs/superpowers/
+src/data/stressDoc.js
+scripts/gen-stress-suite.mjs
+scripts/verify-stress.mjs
+scripts/repro-audit.mjs
+
 # Local reference copy of the original monolithic engine. It is already
 # preserved byte-identical in git history at 3e8f0db, so committing it again
 # would only duplicate 111 KB.
@@ -28,10 +43,15 @@ scriptforge_handwriting_2d_layout_engine.html
 # result lives in src/ and index.html.
 .wave3_stage/
 
-# Personal coursework & local artifacts — carry name/roll number or private
-# chats; keep them out of the public repo.
-Assignment-I (1).pdf
-T9.pdf
+# Local-only study material and scratch exports: third-party PDFs, notebooks,
+# archives and one-off planning notes. They are never part of the app runtime.
+*.pdf
 *.ipynb
-DM Quiz 3 - Clear Notes.smd
-WhatsApp Unknown 2026-10-22 at 9.25.05 AM.zip
+*.zip
+*.smd
+scriptforge_1000_line_atlas.txt
+universal_*.md
+repo_cleanup_and_deploy.md
+POSTING_STRATEGY.md
+GOALS.md
+REPRO.md

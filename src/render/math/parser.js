@@ -86,7 +86,7 @@ export const BIG_OPERATORS = {
     '\\inf':     { op: 'lim',    symbol: 'inf', limitsDefault: 'abovebelow' }
 };
 
-const ACCENT_COMMANDS = {
+export const ACCENT_COMMANDS = {
     '\\overline': 'overline',
     '\\bar': 'bar',
     '\\underline': 'underline',
@@ -102,13 +102,13 @@ const ACCENT_COMMANDS = {
     '\\underbrace': 'underbrace'
 };
 
-const TEXT_WRAP_COMMANDS = new Set([
+export const TEXT_WRAP_COMMANDS = new Set([
     '\\text', '\\textrm', '\\textbf', '\\textit', '\\texttt',
     '\\mathrm', '\\mathbf', '\\mathbb', '\\mathcal', '\\mathfrak',
     '\\mathsf', '\\operatorname', '\\mbox'
 ]);
 
-const SPACE_COMMANDS = {
+export const SPACE_COMMANDS = {
     '\\,': 0.18,
     '\\:': 0.24,
     '\\;': 0.30,

@@ -3,15 +3,15 @@
   "version": "1.1.0",
   "private": true,
   "type": "module",
-  "description": "100% Offline Universal Handwriting, 2D LaTeX Math & Compact STEM Diagram Compiler in Vanilla ES6 JS",
+  "description": "ScriptForge — Offline Declarative Sketchnote, 2D Math & Engineering Diagram Compiler with MCP Server for AI Coding Agents",
   "scripts": {
     "dev": "node scripts/serve.mjs",
     "start": "node scripts/serve.mjs",
     "verify": "node scripts/verify-waves.mjs",
-    "growth:discover": "node scripts/growth/discover.mjs",
-    "growth:drafts": "node scripts/growth/generate-drafts.mjs",
-    "growth:pipeline": "node scripts/growth/discover.mjs && node scripts/growth/generate-drafts.mjs",
-    "growth:route": "node scripts/growth/jev-router.mjs"
+    "mcp": "node mcp/server.mjs",
+    "notes": "node scripts/notes-cli.mjs",
+    "notes:index": "node scripts/build-notes-index.mjs",
+    "verify:notes": "node scripts/verify-notes.mjs && node scripts/verify-mcp.mjs"
   },
   "engines": {
     "node": ">=18"
