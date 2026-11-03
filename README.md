@@ -182,6 +182,8 @@ commands are rejected rather than silently swallowed.
 - **Allographic handwriting engine** — every character is warped with continuous noise,
   affine shear and pressure-modulated ink; adjacent identical characters draw different
   structural allographs.
+- **Curated style presets** — start from Classic Blue, Engineering Grid, Pencil Draft,
+  Cornell Focus, Red Pen or Clean Print, then fine-tune every slider yourself.
 - **2D mathematics** — fractions, radicals, matrices, cases, integrals, sums with limits,
   delimiters and accents, laid out as strokes rather than typeset glyphs.
 - **Diagram compilers** — tables, bitfields, Karnaugh maps, logic and flip-flop schematics,
@@ -267,7 +269,8 @@ npm run dev
 node scripts/qa/harness.mjs scripts/qa/wave1.assertions.js
 node scripts/qa/harness.mjs scripts/qa/wave2.assertions.js
 node scripts/qa/harness.mjs scripts/qa/wave3.assertions.js
-node scripts/qa/harness.mjs scripts/qa/mobile.assertions.js
+node scripts/qa/harness.mjs scripts/qa/style-presets.assertions.js
+QA_VIEWPORT=375,812 node scripts/qa/harness.mjs scripts/qa/mobile.assertions.js
 ```
 
 If you change Tailwind utility classes, regenerate the stylesheet:

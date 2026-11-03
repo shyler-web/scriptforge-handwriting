@@ -10,6 +10,8 @@ import {
     regenerateSeed,
     toggleVarianceInspector,
     loadPreset,
+    applyStylePreset,
+    resetStylePreset,
     insertSnippet,
     insertCustomImageTag,
     toggleModal,
@@ -31,6 +33,8 @@ export function initEvents() {
             regenerateSeed,
             toggleVarianceInspector,
             loadPreset,
+            applyStylePreset,
+            resetStylePreset,
             insertSnippet,
             insertCustomImageTag,
             toggleModal,
@@ -60,6 +64,14 @@ export function initEvents() {
             case 'loadPreset':
             case 'load-preset':
                 loadPreset(arg);
+                break;
+            case 'stylePreset':
+            case 'style-preset':
+                applyStylePreset(arg);
+                break;
+            case 'stylePresetReset':
+            case 'resetStylePreset':
+                resetStylePreset();
                 break;
             case 'snippet':
             case 'insertSnippet':

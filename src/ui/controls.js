@@ -5,6 +5,7 @@
 
 import { state, setHandSeed, setInkKey, toggleInspectVariance } from '../core/state.js';
 import { PRESETS } from '../data/presets.js';
+import { STYLE_PRESETS, DEFAULT_STYLE_PRESET } from '../data/style-presets.js';
 import { renderFullPage } from '../render/page.js';
 import { exportMultiPagePdf, exportCurrentPagePng } from '../render/pdfExport.js';
 
@@ -64,6 +65,59 @@ export function loadPreset(key) {
         editor.value = PRESETS[key];
         scheduleRender();
     }
+}
+
+const SLIDER_SUFFIX = { slantAngle: '°' };
+
+/**
+ * Applies a curated starting style. Every value remains editable afterwards;
+ * the preset only moves the existing controls.
+ */
+export function applyStylePreset(key = DEFAULT_STYLE_PRESET) {
+    const preset = STYLE_PRESETS[key];
+    if (!preset) return null;
+
+    const font = document.getElementById('fontArchetype');
+    if (font) font.value = preset.font;
+
+    const paper = document.getElementById('paperStyle');
+    if (paper) paper.value = preset.paper;
+
+    for (const [id, value] of Object.entries(preset.values || {})) {
+        const el = document.getElementById(id);
+        if (!el) continue;
+        el.value = String(value);
+        const label = document.getElementById('val_' + id);
+        if (label) label.textContent = String(el.value) + (SLIDER_SUFFIX[id] || '');
+    }
+
+    for (const [id, checked] of Object.entries(preset.checks || {})) {
+        const el = document.getElementById(id);
+        if (el) el.checked = Boolean(checked);
+    }
+
+    setInk(preset.ink);
+
+    document.querySelectorAll('[data-action="stylePreset"]').forEach(btn => {
+        const active = btn.getAttribute('data-arg') === key;
+        btn.dataset.active = active ? 'true' : 'false';
+        btn.classList.toggle('ring-2', active);
+        btn.classList.toggle('ring-indigo-400', active);
+        btn.classList.toggle('border-indigo-500', active);
+        btn.classList.toggle('border-slate-700', !active);
+        btn.classList.toggle('text-white', active);
+        btn.classList.toggle('text-slate-200', !active);
+    });
+
+    const hint = document.getElementById('stylePresetHint');
+    if (hint) hint.textContent = preset.description;
+
+    scheduleRender();
+    return key;
+}
+
+export function resetStylePreset() {
+    return applyStylePreset(DEFAULT_STYLE_PRESET);
 }
 
 export function insertSnippet(type) {
