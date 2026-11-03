@@ -7,6 +7,7 @@ import { drawHandwrittenWord, drawAllographicChar } from '../glyph.js';
 import { parseLatexToAST } from '../math/parser.js';
 import { measureMathAST } from '../math/measure.js';
 import { renderMathAST } from '../math/renderer.js';
+import { INK_PROFILES } from '../../core/config.js';
 
 /**
  * Draws a crisp hand-drawn rounded rectangle loop (for K-Map Prime Implicant groups & nodes)
@@ -223,4 +224,280 @@ export function wrapCellText(text, maxWidthPx, fontSize) {
     }
     if (curLine) lines.push(curLine);
     return lines;
+}
+
+// ============================================================================
+// Rough.js compatibility helpers used by the Universal Sketch Engine.
+// These keep the sketch modules independent of the older diagram renderers.
+// ============================================================================
+
+function roughStyle(opts = {}) {
+    return {
+        stroke: opts.stroke || opts.color || '#1e293b',
+        strokeWidth: opts.strokeWidth ?? 1.6,
+        roughness: opts.roughness ?? 0.75,
+        bowing: opts.bowing ?? 0.5,
+        seed: opts.seed ?? 1,
+        ...(opts.fill ? { fill: opts.fill } : {}),
+        ...(opts.fillStyle ? { fillStyle: opts.fillStyle } : {}),
+        ...(opts.dash || opts.dashed ? { strokeLineDash: Array.isArray(opts.dash || opts.dashed) ? (opts.dash || opts.dashed) : [6, 5] } : {}),
+        ...(opts.disableMultiStroke !== undefined ? { disableMultiStroke: opts.disableMultiStroke } : {})
+    };
+}
+
+function ctxRoughAdapter(ctx) {
+    const apply = (o) => {
+        ctx.strokeStyle = o.stroke;
+        ctx.lineWidth = o.strokeWidth;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        if (o.fill && o.fill !== 'none') ctx.fillStyle = o.fill;
+        if (o.strokeLineDash) ctx.setLineDash(o.strokeLineDash);
+        else ctx.setLineDash([]);
+    };
+
+    const path = (points, close = false) => {
+        if (!points || !points.length) return;
+        ctx.beginPath();
+        points.forEach((pt, idx) => {
+            const x = Array.isArray(pt) ? pt[0] : pt.x;
+            const y = Array.isArray(pt) ? pt[1] : pt.y;
+            idx === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+        });
+        if (close) ctx.closePath();
+        ctx.stroke();
+    };
+
+    return {
+        line(x1, y1, x2, y2, o = {}) {
+            ctx.save(); apply(roughStyle(o));
+            ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+            ctx.restore();
+        },
+        linearPath(points, o = {}) {
+            ctx.save(); apply(roughStyle(o)); path(points, false); ctx.restore();
+        },
+        curve(points, o = {}) {
+            ctx.save(); apply(roughStyle(o));
+            const pts = (points || []).map(pt => Array.isArray(pt) ? pt : [pt.x, pt.y]);
+            if (pts.length >= 3) {
+                ctx.beginPath();
+                ctx.moveTo(pts[0][0], pts[0][1]);
+                for (let i = 1; i < pts.length - 1; i++) {
+                    const mx = (pts[i][0] + pts[i + 1][0]) * 0.5;
+                    const my = (pts[i][1] + pts[i + 1][1]) * 0.5;
+                    ctx.quadraticCurveTo(pts[i][0], pts[i][1], mx, my);
+                }
+                const last = pts[pts.length - 1];
+                ctx.lineTo(last[0], last[1]);
+                ctx.stroke();
+            } else {
+                path(pts, false);
+            }
+            ctx.restore();
+        },
+        circle(cx, cy, diameter, o = {}) {
+            const r = Math.abs(diameter) * 0.5;
+            ctx.save(); apply(roughStyle(o));
+            ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2);
+            if (o.fill && o.fill !== 'none') ctx.fill();
+            ctx.stroke();
+            ctx.restore();
+        },
+        ellipse(cx, cy, w, h, o = {}) {
+            ctx.save(); apply(roughStyle(o));
+            ctx.beginPath(); ctx.ellipse(cx, cy, Math.abs(w) * 0.5, Math.abs(h) * 0.5, 0, 0, Math.PI * 2);
+            if (o.fill && o.fill !== 'none') ctx.fill();
+            ctx.stroke();
+            ctx.restore();
+        },
+        rectangle(x, y, w, h, o = {}) {
+            ctx.save(); apply(roughStyle(o));
+            ctx.beginPath(); ctx.rect(x, y, w, h);
+            if (o.fill && o.fill !== 'none') ctx.fill();
+            ctx.stroke();
+            ctx.restore();
+        },
+        polygon(points, o = {}) {
+            ctx.save(); apply(roughStyle(o));
+            path(points, true);
+            if (o.fill && o.fill !== 'none') ctx.fill();
+            ctx.restore();
+        },
+        arc(cx, cy, w, h, start, stop, closed, o = {}) {
+            ctx.save(); apply(roughStyle(o));
+            ctx.beginPath();
+            ctx.ellipse(cx, cy, Math.abs(w) * 0.5, Math.abs(h) * 0.5, 0, start, stop);
+            if (closed) ctx.closePath();
+            ctx.stroke();
+            ctx.restore();
+        }
+    };
+}
+
+function getRoughRc(ctx) {
+    if (!ctx) return null;
+    if (typeof window !== 'undefined' && window.rough && typeof window.rough.canvas === 'function' && ctx.canvas) {
+        return window.rough.canvas(ctx.canvas);
+    }
+    return ctxRoughAdapter(ctx);
+}
+
+export function rLine(rc, ctx, x1, y1, x2, y2, opts = {}) {
+    if (rc && typeof rc.line === 'function') {
+        rc.line(x1, y1, x2, y2, roughStyle(opts));
+        return;
+    }
+    if (ctx) {
+        ctx.save();
+        const o = roughStyle(opts);
+        ctx.strokeStyle = o.stroke;
+        ctx.lineWidth = o.strokeWidth;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+        ctx.restore();
+    }
+}
+
+export function rCircle(rc, ctx, cx, cy, radius, opts = {}) {
+    if (rc && typeof rc.circle === 'function') {
+        rc.circle(cx, cy, Math.abs(radius) * 2, roughStyle(opts));
+        return;
+    }
+    if (ctx) {
+        const o = roughStyle(opts);
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(cx, cy, Math.abs(radius), 0, Math.PI * 2);
+        ctx.fillStyle = o.fill && o.fill !== 'none' ? o.fill : o.stroke;
+        ctx.strokeStyle = o.stroke;
+        ctx.lineWidth = o.strokeWidth;
+        if (o.fill && o.fill !== 'none') ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+    }
+}
+
+export function rEllipse(rc, ctx, cx, cy, w, h, opts = {}) {
+    if (rc && typeof rc.ellipse === 'function') {
+        rc.ellipse(cx, cy, Math.abs(w), Math.abs(h), roughStyle(opts));
+        return;
+    }
+    if (ctx) {
+        const o = roughStyle(opts);
+        ctx.save();
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, Math.abs(w) * 0.5, Math.abs(h) * 0.5, 0, 0, Math.PI * 2);
+        ctx.strokeStyle = o.stroke;
+        ctx.lineWidth = o.strokeWidth;
+        ctx.stroke();
+        ctx.restore();
+    }
+}
+
+export function rRect(rc, ctx, x, y, w, h, opts = {}) {
+    if (rc && typeof rc.rectangle === 'function') {
+        rc.rectangle(x, y, w, h, roughStyle(opts));
+        return;
+    }
+    if (ctx) {
+        ctx.save();
+        const o = roughStyle(opts);
+        ctx.strokeStyle = o.stroke;
+        ctx.lineWidth = o.strokeWidth;
+        ctx.strokeRect(x, y, w, h);
+        ctx.restore();
+    }
+}
+
+export function rPolygon(rc, ctx, points, opts = {}) {
+    const pts = (points || []).map(pt => Array.isArray(pt) ? pt : [pt.x, pt.y]);
+    if (rc && typeof rc.polygon === 'function') {
+        rc.polygon(pts, roughStyle(opts));
+        return;
+    }
+    if (ctx && pts.length) {
+        ctx.save();
+        const o = roughStyle(opts);
+        ctx.strokeStyle = o.stroke;
+        ctx.lineWidth = o.strokeWidth;
+        ctx.beginPath();
+        pts.forEach(([x, y], i) => i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y));
+        ctx.closePath();
+        if (o.fill && o.fill !== 'none') ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+    }
+}
+
+export function rCurve(rc, ctx, points, opts = {}) {
+    if (rc && typeof rc.curve === 'function') {
+        rc.curve(points, roughStyle(opts));
+        return;
+    }
+    if (ctx) ctxRoughAdapter(ctx).curve(points, opts);
+}
+
+export function rArc(rc, ctx, cx, cy, w, h, start, stop, closed = false, opts = {}) {
+    if (rc && typeof rc.arc === 'function') {
+        rc.arc(cx, cy, w, h, start, stop, closed, roughStyle(opts));
+        return;
+    }
+    if (ctx) ctxRoughAdapter(ctx).arc(cx, cy, w, h, start, stop, closed, opts);
+}
+
+export function measureDiagramText(text, font = 'Caveat', size = 15) {
+    const str = String(text ?? '').trim();
+    if (!str) return { width: 0, height: 0 };
+    const isMath = (str.startsWith('$') && str.endsWith('$') && str.length > 2)
+        || str.includes('\\') || str.includes('_') || str.includes('^');
+    if (isMath) {
+        const clean = str.startsWith('$') && str.endsWith('$') ? str.slice(1, -1) : str;
+        try {
+            const m = measureMathAST(parseLatexToAST(clean), size, size * 1.65);
+            return { width: Math.max(6, m.width), height: Math.max(size, m.height) };
+        } catch {
+            // Fall through to a proportional estimate.
+        }
+    }
+    return { width: Math.max(6, str.length * size * 0.46), height: size * 1.25 };
+}
+
+export function drawDiagramText(ctx, text, x, y, opts = {}) {
+    const str = String(text ?? '').trim();
+    if (!str || !ctx) return 0;
+
+    const font = opts.font || opts.fontFamily || 'Caveat';
+    const size = opts.size || 15;
+    const color = opts.color || '#1e293b';
+    const m = measureDiagramText(str, font, size);
+
+    let drawX = x;
+    if (opts.align === 'center') drawX -= m.width * 0.5;
+    else if (opts.align === 'right' || opts.align === 'end') drawX -= m.width;
+
+    let drawY = y;
+    if (opts.baseline === 'middle') drawY += size * 0.35;
+    else if (opts.baseline === 'top' || opts.baseline === 'hanging') drawY += size * 0.82;
+    else if (opts.baseline === 'bottom') drawY -= size * 0.08;
+
+    const ink = {
+        ...INK_PROFILES.ballpoint_blue,
+        color,
+        secondary: color,
+        accent: color
+    };
+    const counter = { count: Number(opts.seed) || 1 };
+    drawLabelOrMath(ctx, getRoughRc(ctx), str, drawX, drawY, size, counter, {
+        fontFamily: font,
+        ink,
+        handSeed: Number(opts.seed) || 4219,
+        diagRoughness: opts.roughness ?? 0.45,
+        diagBowing: opts.bowing ?? 0.4,
+        singlePassStroke: true
+    });
+    return m.width;
 }
