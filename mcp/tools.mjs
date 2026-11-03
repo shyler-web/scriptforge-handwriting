@@ -17,7 +17,7 @@ Call get_authoring_guide before writing DSL. Notes are Markdown-like:
 - Diagram must be alone on its line: [DIAGRAM: type | key=value | key=value]
 - Page break: ---PAGE---
 - Strike-through: ~~wrong~~
-Diagram types: grid, bitfield, kmap, schematic/circuit, dfa, tree, graph, canvas2d/plot, svg, custom_image.
+Diagram types: grid, bitfield, kmap, schematic/circuit, dfa, tree, graph, canvas2d/plot, svg, custom_image, sketch.\n\nFor [sketch: ...] blocks, use statements such as point, arrow, spring, support, angle, axes, plot, shade, tape, ring6, row, col and ring.
 Always validate before finishing.`;
 
 const SCOPE_DESCRIPTION =

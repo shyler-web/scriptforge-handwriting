@@ -78,6 +78,32 @@ async function main() {
             assert.equal(result.warnings.length, 0);
         });
 
+        await ok('multi-line sketch blocks pass the validator', () => {
+            const note = `# Sketch test
+
+[sketch:
+  title "Free-body diagram"
+  point O = (0, 0) label="$O$" pos=sw
+  point A = O + polar(70, 35) label="$A$"
+  arrow O -> A label="$F$"
+  angle (1, 0) O A label="$\\theta$"
+  support (-40, 30) -- (150, 30) side=below
+]
+`;
+            const result = validateNote(note, { slug: 'sketch/test' });
+            assert.equal(result.ok, true, JSON.stringify(result.errors, null, 2));
+        });
+
+        await ok('empty and unbalanced sketch blocks are rejected', () => {
+            const empty = validateNote('[sketch:\n]', { slug: 'empty' });
+            assert.equal(empty.ok, false);
+            assert.ok(empty.errors.some(e => /needs at least one statement/.test(e.message)));
+
+            const unbalanced = validateNote('[sketch:\n  point O = (0, 0\n]', { slug: 'bad' });
+            assert.equal(unbalanced.ok, false);
+            assert.ok(unbalanced.errors.some(e => /Unbalanced parentheses/.test(e.message)));
+        });
+
         await ok('invalid diagram, math command and inline dollar are reported with lines', () => {
             const result = validateNote(INVALID_NOTE, { slug: 'broken' });
             assert.equal(result.ok, false);

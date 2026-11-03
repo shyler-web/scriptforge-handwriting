@@ -40,7 +40,7 @@ export const SUPPORTED_DIAGRAM_TYPES = new Set([
     'svg',
     'grid', 'table', 'kmap', 'bitfield', 'array',
     'schematic', 'circuit', 'flipflop', 'dfa', 'nfa', 'fsm', 'tree', 'list', 'graph',
-    'plot', 'canvas2d', 'geometry', 'target', 'vectors',
+    'plot', 'canvas2d', 'geometry', 'target', 'vectors', 'sketch',
     'custom_image', 'image'
 ]);
 
@@ -76,6 +76,9 @@ export const DIAGRAM_EXAMPLE =
 
 export const MATH_EXAMPLE =
     '$$ \\frac{\\partial f}{\\partial x} = \\lim_{h \\to 0} \\frac{f(x+h)-f(x)}{h} $$';
+
+export const SKETCH_EXAMPLE =
+    '[sketch:\n  point O = (0, 0) label="$O$"\n  point A = O + polar(60, 40) label="$A$"\n  arrow O -> A\n]';
 
 function countUnescaped(text, char) {
     let count = 0;
@@ -157,6 +160,49 @@ function validateMathSegment(segment, errors, warnings) {
         warnings.push({
             line,
             message: 'Inline math contains a "\\\\" row break; use display math $$...$$ for multi-row structures.'
+        });
+    }
+}
+
+
+function validateSketchBody(body, startLine, errors) {
+    const text = String(body || '').trim();
+    if (!text) {
+        errors.push({
+            line: startLine,
+            message: 'A [sketch: ...] block needs at least one statement.',
+            example: SKETCH_EXAMPLE
+        });
+        return;
+    }
+
+    let parens = 0;
+    let brackets = 0;
+    let braces = 0;
+    let inQuotes = false;
+    for (let i = 0; i < text.length; i++) {
+        const ch = text[i];
+        if (ch === '"' && text[i - 1] !== '\\') {
+            inQuotes = !inQuotes;
+            continue;
+        }
+        if (inQuotes) continue;
+        if (ch === '(') parens++;
+        else if (ch === ')') parens--;
+        else if (ch === '[') brackets++;
+        else if (ch === ']') brackets--;
+        else if (ch === '{') braces++;
+        else if (ch === '}') braces--;
+    }
+
+    if (inQuotes) {
+        errors.push({ line: startLine, message: 'Unclosed quote in [sketch: ...] block.', example: SKETCH_EXAMPLE });
+    }
+    if (parens !== 0 || brackets !== 0 || braces !== 0) {
+        errors.push({
+            line: startLine,
+            message: 'Unbalanced parentheses, brackets or braces in [sketch: ...] block.',
+            example: SKETCH_EXAMPLE
         });
     }
 }
@@ -259,10 +305,36 @@ export function validateNote(text, { slug = '' } = {}) {
         warnings.push({ line: 1, message: 'The note body is empty.' });
     }
 
+    let sketchStart = -1;
+    let sketchBody = [];
+
     bodyLines.forEach((rawLine, index) => {
         const lineNo = index + 1 + lineOffset;
         const line = rawLine.trimEnd();
         const trimmed = line.trim();
+
+        if (sketchStart !== -1) {
+            if (trimmed.endsWith(']')) {
+                sketchBody.push(trimmed.slice(0, -1));
+                validateSketchBody(sketchBody.join('\n'), sketchStart, errors);
+                sketchStart = -1;
+                sketchBody = [];
+            } else {
+                sketchBody.push(rawLine);
+            }
+            return;
+        }
+
+        if (/^\[sketch:/i.test(trimmed)) {
+            const rest = trimmed.replace(/^\[sketch:\s*/i, '');
+            if (rest.trimEnd().endsWith(']')) {
+                validateSketchBody(rest.trimEnd().slice(0, -1), lineNo, errors);
+            } else {
+                sketchStart = lineNo;
+                sketchBody = [rest];
+            }
+            return;
+        }
 
         if (trimmed.startsWith('[DIAGRAM:') || /\[DIAGRAM:/i.test(trimmed)) {
             if (trimmed !== line.trim() || !/^\[DIAGRAM:/i.test(trimmed)) {
@@ -306,6 +378,14 @@ export function validateNote(text, { slug = '' } = {}) {
             });
         }
     });
+
+    if (sketchStart !== -1) {
+        errors.push({
+            line: sketchStart,
+            message: 'Unclosed [sketch: ...] block; add a closing "]".',
+            example: SKETCH_EXAMPLE
+        });
+    }
 
     for (const segment of findMathSegments(bodyLines)) {
         const lineNo = segment.line + lineOffset;
