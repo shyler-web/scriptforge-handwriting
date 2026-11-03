@@ -12,6 +12,8 @@ import { renderCanvas2D } from './canvas2d.js';
 import { renderSvgDiagram } from './svgAdapter.js';
 import * as customImgMod from './customImage.js';
 import { renderGraphDiagram } from './graph.js';
+import { renderSketch } from '../sketch/engine.js';
+import { extractDiagramLayoutDirectives } from '../spatialLayout.js';
 
 function resolveInkAndSeed(opts, charCounterRef) {
     const stateObj = stateMod.state || stateMod.default || stateMod;
@@ -54,6 +56,30 @@ export function parseDiagramSpec(specStr) {
             if (k) params[k] = v;
         }
     }
+
+    if (diagType === 'sketch' && typeof params.body === 'string') {
+        try {
+            params.body = decodeURIComponent(params.body);
+        } catch {
+            // Keep the raw body if a caller passed it unencoded.
+        }
+        const extracted = extractDiagramLayoutDirectives(params.body);
+        params.body = extracted.cleanSpec;
+        params.layout = extracted.layout;
+    } else if (params.place || params.pin) {
+        // One-line layout directives for non-sketch diagrams:
+        // [DIAGRAM: graph | place=right | w=45% | ...]
+        const layoutParts = [];
+        for (const key of ['place', 'size', 'scale', 'w', 'pin']) {
+            if (params[key] !== undefined) {
+                layoutParts.push(`${key}=${params[key]}`);
+                delete params[key];
+            }
+        }
+        const extracted = extractDiagramLayoutDirectives(`@layout ${layoutParts.join(' ')}`);
+        params.layout = extracted.layout;
+    }
+
     return { diagType, params };
 }
 
@@ -90,6 +116,18 @@ export function renderHandSketchedDiagram(ctx, rc, specStr, startX, startY, avai
             usedHeight = renderCanvas2D(ctx, rc, params, startX, startY, clampedWidth, counter, opts, ink, roughOpts);
         } else if (diagType === 'graph') {
             usedHeight = renderGraphDiagram(ctx, rc, params, startX, startY, clampedWidth, counter, opts, ink, roughOpts);
+        } else if (diagType === 'sketch') {
+            usedHeight = renderSketch(
+                ctx,
+                rc,
+                params.body || '',
+                startX,
+                startY,
+                clampedWidth,
+                opts.fontFamily || 'Caveat',
+                ink.color,
+                seed
+            );
         } else if (diagType === 'custom_image' || diagType === 'image') {
             const imgFn = customImgMod.renderCustomImage || customImgMod.drawCustomImage || customImgMod.default;
             if (typeof imgFn === 'function') {
