@@ -135,7 +135,16 @@ const PROJECT_MODULES = [
     { specifier: '../src/render/math/measure.js', symbols: ['measureMathAST'] },
     { specifier: '../src/render/diagrams/index.js', symbols: ['parseDiagramSpec'] },
     { specifier: '../src/render/diagrams/canvas2d.js', symbols: ['evaluateMathFunction'] },
+    { specifier: '../src/render/diagrams/schematic.js', symbols: ['renderTreeOrListSchematic'] },
     { specifier: '../src/render/diagrams/svgAdapter.js', symbols: ['flattenSvgPathD'] },
+    { specifier: '../src/render/sketch/layout.js', symbols: ['normalizeArrowText', 'resolveRelativePosition', 'layoutTree', 'layoutLayeredDAG', 'layoutGraphTopology', 'computeClusterBox'] },
+    { specifier: '../src/render/sketch/router.js', symbols: ['segmentHitsRect', 'isDirectLineBlocked', 'routeOrthogonal', 'routeCurvedAroundObstacles', 'buildSelfLoop', 'assignParallelEdgeBends'] },
+    { specifier: '../src/render/sketch/physics.js', symbols: ['solveInclinedPlane', 'solvePulleySystem', 'solveOpticsRayTrace', 'solveElectrostaticField', 'solveVectorFieldGrid'] },
+    { specifier: '../src/render/sketch/systems.js', symbols: ['parseWaveformSpec', 'solveLinkedList', 'solveMemoryFrame', 'solveBTree', 'parsePipelineSpec'] },
+    { specifier: '../src/render/sketch/chemistry.js', symbols: ['drawWedgeBond', 'drawDashBond', 'solveSkeletalChain', 'solveChairConformation', 'solveNewmanProjection'] },
+    { specifier: '../src/render/sketch/discrete.js', symbols: ['compileSetBooleanExpr', 'solveVennDiagram', 'solveBipartiteMapping', 'layoutHasseDiagram'] },
+    { specifier: '../src/render/sketch/calculus3d.js', symbols: ['solveSurface3D', 'solveRiemannSum', 'solveMatrixGrid', 'solveSlopeField'] },
+    { specifier: '../src/render/spatialLayout.js', symbols: ['PAGE_PRESETS', 'extractDiagramLayoutDirectives', 'parsePageDirective', 'rectsOverlap', 'SpatialExclusionManager'] },
     { specifier: '../src/pipeline/vectorize.js', symbols: ['simplifyPolylineRDP', 'zhangSuenThinning'] },
     { specifier: '../src/render/glyph.js', symbols: ['selectAllographVariant', 'computeStrokeVelocityProfile'] },
     { specifier: '../src/core/noise.js', symbols: ['noise'] }
@@ -171,6 +180,7 @@ function resolveSymbol(specifier, symbol, fallback) {
 const parseLatexToAST = resolveSymbol('../src/render/math/parser.js', 'parseLatexToAST', () => []);
 const measureMathAST = resolveSymbol('../src/render/math/measure.js', 'measureMathAST', () => ({ width: 0, ascent: 0, descent: 0, height: 0, linesAbove: 0, linesBelow: 0 }));
 const parseDiagramSpec = resolveSymbol('../src/render/diagrams/index.js', 'parseDiagramSpec', () => ({ diagType: '', params: null }));
+const renderTreeOrListSchematic = resolveSymbol('../src/render/diagrams/schematic.js', 'renderTreeOrListSchematic', () => 0);
 const evaluateMathFunction = resolveSymbol('../src/render/diagrams/canvas2d.js', 'evaluateMathFunction', () => NaN);
 const flattenSvgPathD = resolveSymbol('../src/render/diagrams/svgAdapter.js', 'flattenSvgPathD', () => []);
 const simplifyPolylineRDP = resolveSymbol('../src/pipeline/vectorize.js', 'simplifyPolylineRDP', () => []);
@@ -235,6 +245,26 @@ for (const spec of diagramSpecs) {
     const parsed = parseDiagramSpec(spec);
     assert(parsed && typeof parsed.diagType === 'string' && parsed.params, `Parsed [${parsed.diagType}] spec cleanly`);
 }
+
+// The documented tree syntax uses hyphen edges (`A-B`); the renderer must not
+// silently collapse such a spec to the single fallback root node.
+const treeCircles = [];
+const treeRc = {
+    line: () => {},
+    rectangle: () => {},
+    circle: (...args) => treeCircles.push(args)
+};
+const treeCtx = new Proxy({}, {
+    get(target, prop) {
+        if (prop === 'measureText') return () => ({ width: 10, actualBoundingBoxAscent: 8, actualBoundingBoxDescent: 2 });
+        if (prop in target) return target[prop];
+        if (typeof prop === 'symbol') return undefined;
+        return () => {};
+    },
+    set(target, prop, value) { target[prop] = value; return true; }
+});
+renderTreeOrListSchematic(treeCtx, treeRc, { edges: 'A-B,B-C' }, 100, 100, 640, { count: 1 }, {}, { color: '#1b3b8c', widthScale: 1 }, {});
+assert(treeCircles.length === 3, `Tree hyphen edges (A-B,B-C) draw 3 nodes (drew ${treeCircles.length})`);
 
 const valCubic = evaluateMathFunction('4*x^3', 0.5);
 assert(Math.abs(valCubic - 0.5) < 1e-6, `Safe math evaluator: 4*(0.5)^3 = ${valCubic}`);

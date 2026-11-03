@@ -7,7 +7,10 @@
   "scripts": {
     "dev": "node scripts/serve.mjs",
     "start": "node scripts/serve.mjs",
-    "verify": "node scripts/verify-waves.mjs",
+    "verify": "node scripts/verify-waves.mjs && node scripts/verify-sketch.mjs && node scripts/verify-spatial.mjs && node scripts/verify-skill.mjs",
+    "verify:sketch": "node scripts/verify-sketch.mjs",
+    "verify:spatial": "node scripts/verify-spatial.mjs",
+    "verify:skill": "node scripts/verify-skill.mjs",
     "mcp": "node mcp/server.mjs",
     "notes": "node scripts/notes-cli.mjs",
     "notes:index": "node scripts/build-notes-index.mjs",
