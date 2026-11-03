@@ -16,7 +16,14 @@ in one package.
 [**Agent skill**](skills/scriptforge-notes/SKILL.md) ·
 [**MCP setup**](#use-it-from-an-agent)
 
-![ScriptForge rendering a Digital Logic study note](docs/screenshot.png)
+<p align="center">
+  <img src="docs/showcase/hero-triptych.webp" alt="Three real ScriptForge notebook pages: organic chemistry, computer systems, and physics" width="100%">
+</p>
+
+<p align="center"><sub>Real ScriptForge output — no mockups.
+<a href="docs/showcase/organic-chemistry.webp">Organic chemistry</a> ·
+<a href="docs/showcase/computer-systems.webp">Computer systems</a> ·
+<a href="docs/showcase/physics-optics.webp">Physics &amp; optics</a></sub></p>
 
 ---
 
@@ -40,6 +47,7 @@ so the same document can be reproduced exactly — or resampled with one click.
 ## Contents
 
 - [What you can build](#what-you-can-build)
+- [Showcase](#showcase)
 - [The language in 60 seconds](#the-language-in-60-seconds)
 - [The universal sketch engine](#the-universal-sketch-engine)
 - [From notes to wall charts](#from-notes-to-wall-charts)
@@ -72,6 +80,31 @@ so the same document can be reproduced exactly — or resampled with one click.
 
 The **Demos** bar in the studio loads five complete examples: Spatial Cheat Sheet, Organic
 Chemistry, CS Systems, Physics & Optics, and 3D & Calculus.
+
+---
+
+## Showcase
+
+Every image below is a real canvas export from the running ScriptForge studio — not a
+mockup, not a design file, not a screenshot of a different app.
+
+### One A3 page, three columns, every engine
+
+![A three-column A3 ScriptForge cheat sheet with organic chemistry, timing waveforms, B-tree, Venn diagram, Hasse lattice, Newman projection and a 3D saddle surface](docs/showcase/spatial-cheatsheet.webp)
+
+`@page size=a3-landscape cols=3` — floating text wrap, side-by-side figure shelves, timing
+waveforms, stack/heap pointer arrows, a B-tree, linked list, Venn diagram, Hasse lattice,
+chair and Newman chemistry, and a Painter-sorted 3D surface on a single page.
+
+### A4 two-column: calculus, linear algebra and ODEs
+
+<p align="center">
+  <img src="docs/showcase/3d-calculus.webp" alt="A two-column ScriptForge page showing a 3D saddle surface, 2x2 matrix shear, ODE slope field and midpoint Riemann sum" width="72%">
+</p>
+
+`@page size=a4-2col` — a 3D saddle mesh with hidden-line occlusion, a 2×2 matrix
+transformation grid, an RK4-integrated ODE slope field, and a midpoint Riemann sum with
+hatched partitions.
 
 ---
 
@@ -502,7 +535,7 @@ scripts/
   verify-mcp.mjs            End-to-end MCP stdio smoke test.
   qa/                       Headless-Chrome assertion suites.
 assets/                     Self-hosted fonts, compiled Tailwind, vendored Rough.js.
-docs/                       Screenshot and authoring guide.
+docs/                       Showcase renders and authoring guide.
 skills/scriptforge-notes/   Complete agent SKILL.md + maintenance checklist.
 ```
 
