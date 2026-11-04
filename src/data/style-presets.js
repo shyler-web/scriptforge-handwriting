@@ -55,7 +55,7 @@ export const STYLE_PRESETS = {
     pencil_draft: {
         label: 'Pencil Draft',
         description: 'Loose 2B pencil study notes on heavy bond paper, with visible grain and sketchy diagrams.',
-        font: 'Kalam',
+        font: 'Shadows Into Light',
         ink: 'graphite',
         paper: 'blank_a4',
         values: {
