@@ -78,9 +78,10 @@
                     <input type="file" id="notesFileUpload" accept=".txt,text/plain,text/markdown" class="hidden">
                 </label>
 
-                <button data-action="modal" data-arg="vlmModal" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-medium transition">
+                <button data-action="modal" data-arg="vlmModal" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-medium transition" title="Alpha — offline image tracing; best with high-contrast line art">
                     <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-400"></i>
                     <span>Image Tracer</span>
+                    <span class="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30 font-mono">Alpha</span>
                 </button>
 
                 <button id="inspectBtn" data-action="inspect" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-medium transition" title="Highlight unique allographic bounding boxes & stroke vectors">
@@ -162,6 +163,7 @@
                     <div class="flex items-center gap-1.5">
                         <i data-lucide="image-plus" class="w-4 h-4 text-purple-400"></i>
                         <span class="text-xs font-semibold text-slate-200">Pipeline A: 1px Centerline Image Skeletonizer</span>
+                        <span class="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30 font-mono">Alpha</span>
                     </div>
                     <label class="cursor-pointer px-2.5 py-1 rounded-md bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/30 text-[11px] font-medium transition">
                         <span>Upload Diagram</span>
@@ -169,7 +171,7 @@
                     </label>
                 </div>
                 <p class="text-[11px] text-slate-400 leading-normal">
-                    Runs Zhang-Suen 1px morphological thinning &amp; Ramer-Douglas-Peucker spline simplification so uploaded diagrams render as single-pass pen strokes.
+                    Alpha tracer: Zhang-Suen 1px thinning and RDP simplification. Best with clean black line art on white paper; photos may need retrying.
                 </p>
                 <div id="uploadedDiagramStatus" class="hidden mt-2 text-[11px] text-emerald-400 flex items-center justify-between bg-emerald-950/40 border border-emerald-800/50 px-2.5 py-1.5 rounded-lg">
                     <span id="uploadedDiagramName">1px Skeleton extracted!</span>
@@ -469,7 +471,7 @@
             <div class="flex items-center justify-between border-b border-slate-800 pb-3">
                 <div class="flex items-center gap-2">
                     <i data-lucide="sparkles" class="w-5 h-5 text-amber-400"></i>
-                    <h3 class="font-bold text-white text-base">Stage 1: Vision-Language Document &amp; Diagram Parser</h3>
+                    <h3 class="font-bold text-white text-base">Image Tracer <span class="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30 font-mono align-middle">Alpha</span></h3>
                 </div>
                 <button data-action="modal" data-arg="vlmModal" class="text-slate-400 hover:text-white">
                     <i data-lucide="x" class="w-5 h-5"></i>
@@ -477,7 +479,10 @@
             </div>
 
             <p class="text-xs text-slate-300 leading-relaxed">
-                Upload an image of a printed worksheet, textbook problem, or diagram. Our <strong>1px Zhang-Suen Centerline Skeletonizer</strong> runs 100% offline in your browser — nothing ever leaves your device — and traces the figure into 1px strokes for the Universal Diagram engine.
+                Upload a diagram or line drawing. The offline <strong>1px Zhang-Suen Centerline Skeletonizer</strong> traces it into pen strokes for the Universal Diagram engine — nothing leaves your device.
+            </p>
+            <p class="text-[11px] text-amber-300 bg-amber-500/15 border border-amber-500/30 rounded-lg px-3 py-2 leading-relaxed">
+                <strong>Alpha:</strong> best with high-contrast line art on a plain background. Complex photos, shading and dense text may produce rough or incomplete strokes.
             </p>
 
             <div class="space-y-3">

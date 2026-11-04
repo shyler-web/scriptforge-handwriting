@@ -21,9 +21,13 @@ export async function processVlmDocument(event, scheduleRenderCallback) {
         const editor = document.getElementById('docInput');
         if (editor) {
             const strokeCount = Array.isArray(contours) ? contours.length : 0;
-            const tag = `[DIAGRAM: custom_image | label=Fig: Hand-Traced from ${file.name}]`;
-            if (!editor.value.includes('[DIAGRAM: custom_image')) {
-                editor.value += `\n\n# Offline 1px Centerline Traced Figure (${strokeCount} strokes)\n${tag}\n`;
+            if (strokeCount > 0) {
+                const tag = `[DIAGRAM: custom_image | label=Fig: Hand-Traced from ${file.name}]`;
+                if (!editor.value.includes('[DIAGRAM: custom_image')) {
+                    editor.value += `\n\n# Offline 1px Centerline Traced Figure (${strokeCount} strokes)\n${tag}\n`;
+                }
+            } else if (!editor.value.includes('Image Tracer (Alpha)')) {
+                editor.value += '\n\n# Image Tracer (Alpha)\nTracing found no clear centerlines. Try a high-contrast line drawing on a plain background.\n';
             }
             editor.dispatchEvent(new Event('input', { bubbles: true }));
         }

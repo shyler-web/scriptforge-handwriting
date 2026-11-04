@@ -218,13 +218,16 @@ export function handleImageDiagramUpload(event, onCompleteCallback) {
 
             const statusEl = document.getElementById('uploadedDiagramStatus');
             const nameEl = document.getElementById('uploadedDiagramName');
+            const found = contours.length > 0;
             if (statusEl) statusEl.classList.remove('hidden');
             if (nameEl) {
-                nameEl.textContent = `Skeletonized ${contours.length} crisp 1px strokes from "${file.name}"`;
+                nameEl.textContent = found
+                    ? `Skeletonized ${contours.length} crisp 1px strokes from "${file.name}"`
+                    : 'No clear centerlines found — try a higher-contrast line drawing.';
             }
 
             const editor = document.getElementById('docInput');
-            if (editor && !editor.value.includes('[DIAGRAM: custom_image]')) {
+            if (editor && found && !editor.value.includes('[DIAGRAM: custom_image]')) {
                 editor.value += '\n\n[DIAGRAM: custom_image]\n';
                 editor.dispatchEvent(new Event('input', { bubbles: true }));
             }
