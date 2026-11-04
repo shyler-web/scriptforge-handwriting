@@ -12,7 +12,7 @@ import { createNotesStore } from './notes-store.mjs';
 import { TOOLS, callTool, getAuthoringGuide } from './tools.mjs';
 
 const SERVER_NAME = 'scriptforge-notes';
-const SERVER_VERSION = '1.1.0';
+const SERVER_VERSION = '1.2.0';
 const SUPPORTED_PROTOCOLS = ['2024-11-05', '2025-03-26', '2025-06-18'];
 const FALLBACK_PROTOCOL = '2025-06-18';
 

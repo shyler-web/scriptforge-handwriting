@@ -1,9 +1,9 @@
 {
   "name": "scriptforge-handwriting",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "private": true,
   "type": "module",
-  "description": "ScriptForge — Offline Declarative Sketchnote, 2D Math & Engineering Diagram Compiler with MCP Server for AI Coding Agents",
+  "description": "ScriptForge \u2014 Offline Declarative Sketchnote, 2D Math & Engineering Diagram Compiler with MCP Server for AI Coding Agents",
   "scripts": {
     "dev": "node scripts/serve.mjs",
     "start": "node scripts/serve.mjs",
