@@ -1,8 +1,14 @@
-# ScriptForge
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/brand/scriptforge-logo-dark.svg">
+    <img src="assets/brand/scriptforge-logo-light.svg" alt="ScriptForge — Write the idea. Forge the notes." width="560">
+  </picture>
+</p>
 
-**Write the idea. Forge the notes.**
-
-[![Release](https://img.shields.io/badge/release-v1.2.0-4f46e5)](https://github.com/shyler-web/scriptforge-handwriting/releases) [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+<p align="center">
+  <a href="https://github.com/shyler-web/scriptforge-handwriting/releases"><img src="https://img.shields.io/badge/release-v1.2.0-4f46e5" alt="Release"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"></a>
+</p>
 
 ScriptForge is a browser-native compiler for handwritten notebook pages. You write a
 compact, declarative document — prose, LaTeX-style mathematics, diagrams and 2D sketch
@@ -563,7 +569,7 @@ scripts/
   verify-notes.mjs          Note store, validator and index tests.
   verify-mcp.mjs            End-to-end MCP stdio smoke test.
   qa/                       Headless-Chrome assertion suites.
-assets/                     Self-hosted fonts, compiled Tailwind, vendored Rough.js.
+assets/                     Self-hosted fonts, compiled Tailwind, vendored Rough.js and brand marks.
 docs/                       Showcase renders and authoring guide.
 skills/scriptforge-notes/   Complete agent SKILL.md + maintenance checklist.
 ```

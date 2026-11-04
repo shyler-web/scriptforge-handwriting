@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 180" role="img" aria-label="ScriptForge — Write the idea. Forge the notes.">
+  <defs>
+    <linearGradient id="sfg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#4f46e5"/>
+      <stop offset="0.55" stop-color="#7c3aed"/>
+      <stop offset="1" stop-color="#db2777"/>
+    </linearGradient>
+  </defs>
+  <g transform="translate(24 24)">
+    <rect x="4" y="4" width="120" height="120" rx="30" fill="url(#sfg)"/>
+    <rect x="8" y="8" width="112" height="112" rx="26" fill="none" stroke="#ffffff" stroke-opacity="0.16"/>
+    <path d="M32 96 L78 38 L97 53 L55 103 Z" fill="#ffffff"/>
+    <path d="M55 103 L72 60" fill="none" stroke="#312e81" stroke-width="3.2" stroke-linecap="round" opacity="0.9"/>
+    <circle cx="65" cy="82" r="3.1" fill="#312e81" opacity="0.9"/>
+    <path d="M34 112 C50 118 78 117 96 109" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity="0.3"/>
+  </g>
+  <text x="184" y="92" font-family="Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="64" font-weight="800" letter-spacing="-2.4" fill="#f8fafc">ScriptForge</text>
+  <text x="186" y="126" font-family="Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" font-weight="600" letter-spacing="1.6" fill="#94a3b8">WRITE THE IDEA. FORGE THE NOTES.</text>
+  <path d="M186 139 C270 145 390 144 520 136" fill="none" stroke="#f472b6" stroke-width="3" stroke-linecap="round" opacity="0.9"/>
+</svg>
