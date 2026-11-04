@@ -62,6 +62,7 @@ so the same document can be reproduced exactly — or resampled with one click.
 - [Studio features](#studio-features)
 - [Quick start](#quick-start)
 - [Use it from an agent](#use-it-from-an-agent)
+- [CLI](#cli)
 - [Document grammar](#document-grammar)
 - [Architecture](#architecture)
 - [Verification](#verification)
@@ -382,6 +383,8 @@ matches the running build.
   into single-pass pen strokes, fully offline.
 - **Notes library** — load public notes or local private notes written through MCP/CLI, with
   live reload and an agent-skill download.
+- **CLI** — create, read, update, append, validate, delete and index notes from any terminal,
+  with public/private scopes and JSON output.
 - **PDF and PNG export** — true multi-page PDF 1.4 built in the browser, one JPEG XObject per
   page, plus current-page PNG.
 
@@ -442,19 +445,35 @@ URL will not work.
 }
 ```
 
-### Notes API without MCP
+### CLI
+
+The notes CLI works without an MCP client and has no dependencies beyond Node.js:
 
 ```bash
-npm run notes -- list --scope public
+npm run notes -- list
 npm run notes -- read dsa/graphs
 npm run notes -- create dsa/trees --title "Trees" --tags dsa,trees --file section.md
+npm run notes -- update dsa/trees --file section.md
+npm run notes -- append dsa/trees --file extra.md
 npm run notes -- validate --file section.md
+npm run notes -- delete dsa/trees --yes
 npm run notes -- index
+npm run notes -- guide
 ```
+
+Useful flags:
+
+| Flag | Meaning |
+|---|---|
+| `--scope public\|private` | Select the note library |
+| `--json` | Machine-readable output for agents |
+| `--file <path>` | Read note content from a file |
+| `--force` | Overwrite on `create` |
+| `--yes` | Confirm `delete` |
 
 Public notes live in `notes/<slug>.md` and are tracked. Private notes live in
 `notes/private/<slug>.md` and are git-ignored. A slug beginning with `private/` selects
-private scope automatically.
+private scope automatically. `npm run notes -- guide` prints the full authoring contract.
 
 Open a note directly:
 
