@@ -2,7 +2,7 @@
 
 **Write the idea. Forge the notes.**
 
-[![Release](https://img.shields.io/github/v/release/shyler-web/scriptforge-handwriting?color=4f46e5)](https://github.com/shyler-web/scriptforge-handwriting/releases) [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Release](https://img.shields.io/badge/release-v1.2.0-4f46e5)](https://github.com/shyler-web/scriptforge-handwriting/releases) [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 ScriptForge is a browser-native compiler for handwritten notebook pages. You write a
 compact, declarative document — prose, LaTeX-style mathematics, diagrams and 2D sketch
