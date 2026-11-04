@@ -10,6 +10,11 @@ import { renderFullPage } from './render/page.js';
 
 function bootScriptForge() {
     paintLucideIcons();
+    console.info(
+        '%c ScriptForge Studio %c offline notes • @shyler-web ',
+        'background:#1e293b;color:#38bdf8;font-weight:700;padding:2px 5px;border-radius:4px 0 0 4px',
+        'background:#0ea5e9;color:#f8fafc;padding:2px 5px;border-radius:0 4px 4px 0'
+    );
 
     const docInput = document.getElementById('docInput');
     if (docInput && !docInput.value.trim()) {

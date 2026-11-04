@@ -599,6 +599,8 @@ node scripts/build-tailwind.mjs
 - Not every legacy diagram parameter is honoured by every alias; the universal engines
   (`grid`, `schematic`, `canvas2d`, `graph`, `svg`, `sketch`) have the widest coverage.
 - DFA return-arc labels are drawn as curves but are not yet annotated.
+- The Image Tracer is **Alpha**: it works best with high-contrast line art; complex photos and
+  dense shading may produce rough or incomplete strokes.
 - The zero-clone inspector currently visualises the slant delta only.
 - The browser reader is read-only. Agents write notes through MCP or the CLI; the studio
   loads them and can export the rendered result.
@@ -612,4 +614,11 @@ pixel-identical against the original: rendered canvas bytes, interactive control
 and the image-to-diagram pipeline all match. Vendored assets retain their original licences;
 see `assets/vendor/rough.LICENSE`, `assets/fonts/OFL.txt` and `assets/fonts/NOTICE.md`.
 
-MIT licensed. See [LICENSE](LICENSE).
+## License and attribution
+
+MIT © 2026 **Kanhaiya** ([@shyler-web](https://github.com/shyler-web)). See [LICENSE](LICENSE).
+
+ScriptForge is an independent open-source project. If you build on it, a link back to the
+repository and the live studio is appreciated. Vendored fonts and Rough.js retain their
+original licences; see `assets/fonts/OFL.txt`, `assets/fonts/NOTICE.md` and
+`assets/vendor/rough.LICENSE`.
