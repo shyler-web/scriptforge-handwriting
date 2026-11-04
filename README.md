@@ -25,6 +25,12 @@ in one package.
 <a href="docs/showcase/computer-systems.webp">Computer systems</a> ·
 <a href="docs/showcase/physics-optics.webp">Physics &amp; optics</a></sub></p>
 
+## Watch the demo
+
+[![Watch the 110-second ScriptForge demo](docs/demo/scriptforge-demo-poster.webp)](https://shyler-web.github.io/scriptforge-handwriting/docs/demo/scriptforge-demo.mp4)
+
+110 seconds · 1080p · captions only · no audio
+
 ---
 
 ## What makes it different
@@ -46,6 +52,7 @@ so the same document can be reproduced exactly — or resampled with one click.
 
 ## Contents
 
+- [Watch the demo](#watch-the-demo)
 - [What you can build](#what-you-can-build)
 - [Showcase](#showcase)
 - [The language in 60 seconds](#the-language-in-60-seconds)

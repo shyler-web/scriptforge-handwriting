@@ -25,7 +25,10 @@ const CONTENT_TYPES = {
     '.jpeg': 'image/jpeg',
     '.svg': 'image/svg+xml',
     '.ico': 'image/x-icon',
-    '.woff2': 'font/woff2'
+    '.woff2': 'font/woff2',
+    '.webp': 'image/webp',
+    '.mp4': 'video/mp4',
+    '.webm': 'video/webm'
 };
 
 createServer(async (req, res) => {
