@@ -26,10 +26,11 @@ in one package.
 [**Changelog**](CHANGELOG.md)
 
 <p align="center">
-  <img src="docs/showcase/hero-triptych.webp" alt="Three real ScriptForge notebook pages: organic chemistry, computer systems, and physics" width="100%">
+  <img src="docs/showcase/studio-a3.webp" alt="ScriptForge Studio showing a three-column A3 cheat sheet with organic chemistry, timing waveforms, B-tree, Venn diagram, 3D surface and live style controls" width="100%">
 </p>
 
-<p align="center"><sub>Real ScriptForge output — no mockups.
+<p align="center"><sub>Real studio capture — no mockups.
+<a href="docs/showcase/studio-a3.webp">A3 cheat sheet</a> ·
 <a href="docs/showcase/organic-chemistry.webp">Organic chemistry</a> ·
 <a href="docs/showcase/computer-systems.webp">Computer systems</a> ·
 <a href="docs/showcase/physics-optics.webp">Physics &amp; optics</a></sub></p>
