@@ -59,9 +59,23 @@ so the same document can be reproduced exactly — or resampled with one click.
 
 ---
 
+## Why I built this
+
+When I asked an AI to explain something, I usually got a wall of text. Ask for a diagram
+and I got blocky architecture boxes; ask for anything else and it reached for SVG, which
+burned tokens fast and still did not look like the page I actually revise from.
+
+Handwriting is a compression format. A small page can hold a derivation, a free-body
+diagram, a timing waveform and the one sentence that makes it click. ScriptForge exists so
+a human or an agent can write the idea in plain text and get that page back — offline,
+deterministic and editable.
+
+---
+
 ## Contents
 
 - [Watch the demo](#watch-the-demo)
+- [Why I built this](#why-i-built-this)
 - [What you can build](#what-you-can-build)
 - [Showcase](#showcase)
 - [The language in 60 seconds](#the-language-in-60-seconds)
