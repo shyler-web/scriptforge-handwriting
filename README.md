@@ -8,7 +8,7 @@
 <p align="center">
   <a href="https://github.com/shyler-web/scriptforge-handwriting/releases"><img src="https://img.shields.io/badge/release-v1.2.0-4f46e5" alt="Release"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"></a>
-  <a href="https://github.com/shyler-web/scriptforge-handwriting/stargazers"><img src="https://img.shields.io/badge/Star_on_GitHub-181717?logo=github&logoColor=white" alt="Star ScriptForge on GitHub"></a>
+  <a href="https://github.com/shyler-web/scriptforge-handwriting"><img src="https://img.shields.io/badge/Star_on_GitHub-181717?logo=github&logoColor=white" alt="Star ScriptForge on GitHub"></a>
 </p>
 
 ScriptForge is a browser-native compiler for handwritten notebook pages. You write a
@@ -26,7 +26,7 @@ in one package.
 [**MCP setup**](#use-it-from-an-agent) ·
 [**Changelog**](CHANGELOG.md)
 
-<p align="center"><sub>If ScriptForge is useful to you, <a href="https://github.com/shyler-web/scriptforge-handwriting/stargazers"><strong>give it a star</strong></a> — it helps more students find it.</sub></p>
+<p align="center"><sub>If ScriptForge is useful to you, <a href="https://github.com/shyler-web/scriptforge-handwriting"><strong>give it a star</strong></a> — it took a lot of work, and it helps more students find it.</sub></p>
 
 <p align="center">
   <img src="docs/showcase/hero-triptych.webp" alt="Three real ScriptForge notebook pages: organic chemistry, computer systems, and physics" width="100%">
