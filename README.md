@@ -26,11 +26,10 @@ in one package.
 [**Changelog**](CHANGELOG.md)
 
 <p align="center">
-  <img src="docs/showcase/studio-a3.webp" alt="ScriptForge Studio showing a three-column A3 cheat sheet with organic chemistry, timing waveforms, B-tree, Venn diagram, 3D surface and live style controls" width="100%">
+  <img src="docs/showcase/hero-triptych.webp" alt="Three real ScriptForge notebook pages: organic chemistry, computer systems, and physics" width="100%">
 </p>
 
-<p align="center"><sub>Real studio capture — no mockups.
-<a href="docs/showcase/studio-a3.webp">A3 cheat sheet</a> ·
+<p align="center"><sub>Real ScriptForge output — no mockups.
 <a href="docs/showcase/organic-chemistry.webp">Organic chemistry</a> ·
 <a href="docs/showcase/computer-systems.webp">Computer systems</a> ·
 <a href="docs/showcase/physics-optics.webp">Physics &amp; optics</a></sub></p>
@@ -103,12 +102,12 @@ Chemistry, CS Systems, Physics & Optics, and 3D & Calculus.
 
 ## Showcase
 
-Every image below is a real canvas export from the running ScriptForge studio — not a
-mockup, not a design file, not a screenshot of a different app.
+Every image below is real output from the running ScriptForge studio — not a mockup,
+not a design file, not a screenshot of a different app.
 
 ### One A3 page, three columns, every engine
 
-![A three-column A3 ScriptForge cheat sheet with organic chemistry, timing waveforms, B-tree, Venn diagram, Hasse lattice, Newman projection and a 3D saddle surface](docs/showcase/spatial-cheatsheet.webp)
+![ScriptForge Studio showing a three-column A3 cheat sheet with organic chemistry, timing waveforms, B-tree, Venn diagram, 3D surface and live style controls](docs/showcase/studio-a3.webp)
 
 `@page size=a3-landscape cols=3` — floating text wrap, side-by-side figure shelves, timing
 waveforms, stack/heap pointer arrows, a B-tree, linked list, Venn diagram, Hasse lattice,
